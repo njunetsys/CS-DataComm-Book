@@ -1,0 +1,1061 @@
+% ch02-2_5_补充_模拟调制与ASK_FSK.tex
+% 模拟调制、ASK、FSK调制解调详解
+
+\section{模拟调制与ASK/FSK详解}
+\label{sec:analog_modulation}
+
+本节补充数字调制中的ASK和FSK调制解调技术，以及完整的模拟调制体系。这些是理解现代数字调制的基础。
+
+\subsection{ASK幅移键控}
+
+幅移键控（ASK, Amplitude Shift Keying）是最简单的数字调制方式，通过改变载波信号的幅度来传输数字信息。
+
+\subsubsection{ASK调制原理}
+
+二进制ASK信号的数学表达式为：
+\begin{equation}
+    s_{\text{ASK}}(t) =
+    \begin{cases}
+        A\cos(2\pi f_c t) & \text{发送逻辑"1"（标记频率）} \\
+        0 & \text{发送逻辑"0"（空号频率）}
+    \end{cases}
+    \quad 0 \leq t < T_b
+\end{equation}
+
+其中 $A$ 是载波幅度，$f_c$ 是载波频率，$T_b$ 是比特周期。
+
+更一般的ASK表达式可以写为：
+\begin{equation}
+    s_{\text{ASK}}(t) = A_m \cdot m(t) \cdot \cos(2\pi f_c t)
+\end{equation}
+其中 $m(t)$ 是数字基带信号（取值为0或1）。
+
+\textbf{频谱特性}：ASK信号的频谱是基带信号频谱的平移。设基带信号的带宽为 $B_m$，则ASK信号的带宽为：
+\begin{equation}
+    B_{\text{ASK}} = 2B_m \quad \text{（双边带）}
+\end{equation}
+
+对于矩形脉冲的基带信号，$B_m \approx 1/T_b$，因此ASK信号的带宽约为：
+\begin{equation}
+    B_{\text{ASK}} \approx \frac{2}{T_b} = 2R_b
+\end{equation}
+其中 $R_b = 1/T_b$ 是比特率。
+
+\subsubsection{ASK调制器结构}
+
+ASK调制器的典型结构如图\ref{fig:ask_modulator}所示：
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=0.9]
+        % ASK Modulator
+        \draw[dashed, fill=blue!10] (-2.5,0.5) rectangle (3.5,2.5) node[above] {ASK调制器};
+        
+        % Input signal
+        \draw[->] (-3,1.5) -- (-2.5,1.5) node[left] {$m(t)$};
+        \draw (-2.5,1.5) -- (-1.5,1.5);
+        
+        % Carrier oscillator
+        \node[rectangle, draw, minimum width=1.2cm, minimum height=0.8cm] at (0,1.5) (osc) {振荡器};
+        \draw[->] (-0.6,1.5) -- (-0.6,1.5);
+        
+        % Multiplier
+        \node[circle, draw, minimum width=0.6cm] at (1,1.5) (mul) {$\times$};
+        \draw[-] (-0.6,1.5) -- (0.6,1.5);
+        \draw[-] (0,2.5) -- (0,2.1) node[above] {$A\cos(2\pi f_c t)$};
+        \draw[-] (0,2.1) -- (0,1.8);
+        \draw[-] (1,1.5) -- (1.3,1.5);
+        
+        % BPF
+        \node[rectangle, draw, minimum width=1.2cm, minimum height=0.8cm] at (2.5,1.5) (bpf) {带通滤波器};
+        \draw[-] (1.3,1.5) -- (1.9,1.5);
+        \draw[-] (3.1,1.5) -- (4,1.5) node[right] {$s_{\text{ASK}}(t)$};
+        
+        % Labels
+        \node at (0,0.5) {载波频率 $f_c$ 远高于信号带宽};
+    \end{tikzpicture}
+    \caption{ASK调制器结构}
+    \label{fig:ask_modulator}
+\end{figure}
+
+\textbf{调制过程}：
+\begin{enumerate}
+    \item 基带数字信号 $m(t)$ 控制模拟开关或乘法器
+    \item 载波振荡器产生稳定频率的正弦波 $A\cos(2\pi f_c t)$
+    \item 乘法器将基带信号与载波相乘，实现幅度调制
+    \item 带通滤波器滤除不需要的谐波分量
+\end{enumerate}
+
+另一种简化实现使用开关电路，当 $m(t)=1$ 时接通载波，当 $m(t)=0$ 时断开。
+
+\subsubsection{ASK解调方法}
+
+\subparagraph{包络检波（非相干解调）}
+
+包络检波是最简单的ASK解调方法，适用于对解调精度要求不高的场合：
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=0.9]
+        % Envelope detector
+        \draw[dashed, fill=green!10] (-2,0.5) rectangle (2.5,2.5) node[above] {ASK非相干解调};
+        
+        % Input
+        \draw[->] (-2.5,1.5) -- (-2,1.5) node[left] {$s_{\text{ASK}}(t)$};
+        
+        % Rectifier
+        \node[rectangle, draw, minimum width=1cm, minimum height=0.7cm] at (-0.5,1.5) (rect) {整流器};
+        \draw[-] (-2,1.5) -- (-1,1.5);
+        \draw[-] (0,1.5) -- (0.5,1.5);
+        
+        % Envelope detector
+        \node[rectangle, draw, minimum width=1cm, minimum height=0.7cm] at (1.5,1.5) (env) {包络检波};
+        \draw[-] (0.5,1.5) -- (1,1.5);
+        \draw[-] (2,1.5) -- (3,1.5) node[right] {$\hat{m}(t)$};
+        
+        % Comparator (optional)
+        \node[rectangle, draw, minimum width=1cm, minimum height=0.7cm] at (4,1.5) (comp) {判决器};
+        \draw[->] (3,1.5) -- (3.5,1.5);
+        \draw[->] (4.6,1.5) -- (5.5,1.5) node[right] {$m(t)$};
+    \end{tikzpicture}
+    \caption{ASK非相干解调}
+    \label{fig:ask_envelope}
+\end{figure}
+
+\textbf{工作原理}：
+\begin{enumerate}
+    \item 整流器将双边带信号变为单向脉动信号
+    \item 包络检波器（RC电路）提取信号包络
+    \item 判决器将包络与门限电压比较，恢复数字信号
+\end{enumerate}
+
+\textbf{优点}：
+\begin{itemize}
+    \item 电路简单，成本低廉
+    \item 不需要载波同步
+    \item 易于实现
+\end{itemize}
+
+\textbf{缺点}：
+\begin{itemize}
+    \item 解调存在门限效应，噪声性能较差
+    \item 当信噪比较低时，性能急剧下降
+\end{itemize}
+
+\subparagraph{相干解调（同步检测）}
+
+相干解调利用与发送端载波同频同相的本地载波进行解调，性能优于包络检波：
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=0.9]
+        % Coherent detector
+        \draw[dashed, fill=purple!10] (-2.5,0.3) rectangle (3,2.7) node[above] {ASK相干解调};
+        
+        % Input
+        \draw[->] (-3,1.5) -- (-2.5,1.5) node[left] {$s_{\text{ASK}}(t)$};
+        
+        % Multiplier
+        \node[circle, draw, minimum width=0.6cm] at (-1.5,1.5) (mul1) {$\times$};
+        \draw[-] (-2.5,1.5) -- (-1.8,1.5);
+        
+        % Local carrier
+        \draw[-] (-2.2,2.5) -- (-1.5,2.5) -- (-1.5,2.1);
+        \node at (-2.2,2.5) [above] {$A_c\cos(2\pi f_c t + \phi)$};
+        
+        % Integrator
+        \node[rectangle, draw, minimum width=1cm, minimum height=0.7cm] at (0,1.5) (int) {积分器};
+        \draw[-] (-1.2,1.5) -- (-0.5,1.5);
+        \draw[-] (0.5,1.5) -- (1,1.5);
+        
+        % Sampler
+        \node[rectangle, draw, minimum width=1cm, minimum height=0.7cm] at (2,1.5) (samp) {采样器};
+        \draw[-] (1,1.5) -- (1.5,1.5);
+        \draw[-] (2,0.8) -- (2,1.1);
+        \node at (2,0.5) {$T_b$};
+        
+        % Output
+        \draw[->] (2.5,1.5) -- (3.5,1.5) node[right] {$m(t)$};
+    \end{tikzpicture}
+    \caption{ASK相干解调}
+    \label{fig:ask_coherent}
+\end{figure}
+
+\textbf{数学分析}：
+接收信号与本地载波相乘：
+\begin{equation}
+    s_{\text{ASK}}(t) \cdot \cos(2\pi f_c t) =
+    \begin{cases}
+        A\cos^2(2\pi f_c t) = \frac{A}{2}[1 + \cos(4\pi f_c t)] & \text{发送"1"} \\
+        0 & \text{发送"0"}
+    \end{cases}
+\end{equation}
+
+低通滤波后：
+\begin{equation}
+    v(t) =
+    \begin{cases}
+        \frac{A}{2} & \text{发送"1"} \\
+        0 & \text{发送"0"}
+    \end{cases}
+\end{equation}
+
+\textbf{优点}：
+\begin{itemize}
+    \item 噪声性能优于非相干解调（约3dB增益）
+    \item 解调精度高
+\end{itemize}
+
+\textbf{缺点}：
+\begin{itemize}
+    \item 需要载波同步电路
+    \item 接收机复杂度增加
+    \item 载波相位误差会影响解调性能
+\end{itemize}
+
+\subsubsection{ASK性能分析}
+
+在AWGN信道中，ASK系统的误码率：
+
+\textbf{相干解调}：
+\begin{equation}
+    P_e^{\text{ASK,coh}} = Q\left(\sqrt{\frac{E_b}{N_0}}\right)
+\end{equation}
+
+\textbf{非相干解调}：
+\begin{equation}
+    P_e^{\text{ASK,noncoh}} = \frac{1}{2}\exp\left(-\frac{E_b}{2N_0}\right)
+\end{equation}
+
+其中 $E_b$ 是每比特能量，$N_0/2$ 是噪声功率谱密度。
+
+\begin{table}[htbp]
+    \centering
+    \caption{ASK调制性能对比}
+    \begin{tabular}{l|c|c}
+        \hline
+        解调方式 & 误码率表达式 & $E_b/N_0$ = 10dB时 $P_e$ \\
+        \hline
+        相干解调 & $Q(\sqrt{E_b/N_0})$ & $\approx 8 \times 10^{-6}$ \\
+        非相干解调 & $\frac{1}{2}\exp(-E_b/2N_0)$ & $\approx 3 \times 10^{-5}$ \\
+        \hline
+    \end{tabular}
+    \label{tab:ask_performance}
+\end{table}
+
+\textbf{应用场景}：
+\begin{itemize}
+    \item 遥控器（如汽车钥匙、门禁遥控）
+    \item 低速数据传输
+    \item 光纤通信中的强度调制
+    \item RFID系统
+\end{itemize}
+
+\subsection{FSK频移键控}
+
+频移键控（FSK, Frequency Shift Keying）通过改变载波频率来传输数字信息，是应用最广泛的数字调制方式之一。
+
+\subsubsection{FSK调制原理}
+
+二进制FSK信号的数学表达式为：
+\begin{equation}
+    s_{\text{FSK}}(t) =
+    \begin{cases}
+        A\cos(2\pi f_1 t) & \text{发送逻辑"1"（标记频率 } f_1 \text{）} \\
+        A\cos(2\pi f_2 t) & \text{发送逻辑"0"（空号频率 } f_2 \text{）}
+    \end{cases}
+    \quad 0 \leq t < T_b
+\end{equation}
+
+其中 $f_1$ 和 $f_2$ 分别称为标记频率和空号频率，它们满足：
+\begin{equation}
+    |f_1 - f_2| = \Delta f \quad \text{（频偏）}
+\end{equation}
+
+FSK信号也可以用相位连续的形式表示（CPFSK, Continuous Phase FSK）。
+
+\textbf{频率间隔选择}：根据奈奎斯特准则，为保证信号正交性，相邻频率的间隔应满足：
+\begin{equation}
+    \Delta f = \frac{n}{2T_b} \quad (n = 1, 2, 3, \ldots)
+\end{equation}
+
+通常选择 $\Delta f = 1/(2T_b)$，称为最小频移键控（MSK, Minimum Shift Keying）。
+
+\subsubsection{FSK调制器结构}
+
+\subparagraph{双振荡器法}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=0.9]
+        % FSK Modulator
+        \draw[dashed, fill=blue!10] (-2.5,0.5) rectangle (3,2.5) node[above] {FSK调制器};
+        
+        % Input
+        \draw[->] (-3,1.5) -- (-2.5,1.5) node[left] {$m(t)$};
+        
+        % Clock
+        \node[rectangle, draw, minimum width=1cm, minimum height=0.6cm] at (-1.5,0.5) (clock) {时钟};
+        \draw[-] (-1.5,0.5) -- (-1.5,1.0);
+        
+        % Oscillators
+        \node[rectangle, draw, minimum width=1cm, minimum height=0.7cm] at (0,2) (osc1) {$f_1$ 振荡器};
+        \node[rectangle, draw, minimum width=1cm, minimum height=0.7cm] at (0,1) (osc2) {$f_2$ 振荡器};
+        
+        % Digital selector
+        \node[rectangle, draw, minimum width=0.8cm, minimum height=1.2cm] at (1.5,1.5) (sel) {数字\\选择器};
+        
+        % Connections
+        \draw[-] (-2.5,1.5) -- (-2,1.5) -- (-2,2.5) -- (-0.5,2);
+        \draw[-] (-2,1.5) -- (-2,0.5) -- (-0.5,1);
+        \draw[-] (-0.5,2) -- (1.1,2);
+        \draw[-] (-0.5,1) -- (1.1,1);
+        \draw[-] (1.5,2) -- (1.5,1.9);
+        \draw[-] (1.5,1) -- (1.5,1.1);
+        \draw[-] (1.9,1.5) -- (2.5,1.5);
+        
+        % Output
+        \draw[->] (2.5,1.5) -- (3.5,1.5) node[right] {$s_{\text{FSK}}(t)$};
+    \end{tikzpicture}
+    \caption{FSK双振荡器调制器}
+    \label{fig:fsk_modulator}
+\end{figure}
+
+\textbf{工作原理}：
+\begin{itemize}
+    \item 两个振荡器分别产生频率 $f_1$ 和 $f_2$ 的正弦波
+    \item 数字选择器根据输入信号 $m(t)$ 选择输出
+    \item $m(t)=1$ 时选择 $f_1$，$m(t)=0$ 时选择 $f_2$
+    \item 时钟电路确保切换同步
+\end{itemize}
+
+\subparagraph{压控振荡器法（VCO）}
+
+使用压控振荡器实现FSK调制：
+\begin{equation}
+    f(t) = f_c + K_{\text{VCO}} \cdot m(t)
+\end{equation}
+其中 $K_{\text{VCO}}$ 是VCO的调制灵敏度。
+
+这种方式可以实现相位连续的FSK（CPFSK）。
+
+\subparagraph{CPFSK连续相位频移键控}
+
+CPFSK通过VCO实现，输出信号的相位是连续的：
+\begin{equation}
+    s_{\text{CPFSK}}(t) = A\cos\left[2\pi f_c t + 2\pi h \int_0^t m(\tau) d\tau\right]
+\end{equation}
+其中 $h = \Delta f \cdot T_b / 2$ 是调制指数。
+
+当 $h = 0.5$ 时，称为最小频移键控（MSK）。
+
+\subsubsection{FSK解调方法}
+
+\subparagraph{非相干解调（包络检波法）}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=0.85]
+        % Non-coherent FSK demodulator
+        \draw[dashed, fill=green!10] (-3,0.2) rectangle (4,3.3) node[above] {FSK非相干解调};
+        
+        % Input
+        \draw[->] (-3.5,1.8) -- (-3,1.8) node[left] {$s_{\text{FSK}}(t)$};
+        
+        % Splitter
+        \draw[-] (-3,1.8) -- (-2.5,1.8);
+        \draw[-] (-2.5,1.8) -- (-2.5,2.5);
+        \draw[-] (-2.5,1.8) -- (-2.5,1.1);
+        
+        % Bandpass filters
+        \node[rectangle, draw, minimum width=1.2cm, minimum height=0.7cm] at (-1.2,2.5) (bpf1) {带通\\$f_1$};
+        \node[rectangle, draw, minimum width=1.2cm, minimum height=0.7cm] at (-1.2,1.1) (bpf2) {带通\\$f_2$};
+        \draw[-] (-2.5,2.5) -- (-1.8,2.5);
+        \draw[-] (-2.5,1.1) -- (-1.8,1.1);
+        \draw[-] (-0.6,2.5) -- (-0.2,2.5);
+        \draw[-] (-0.6,1.1) -- (-0.2,1.1);
+        
+        % Envelope detectors
+        \node[rectangle, draw, minimum width=1cm, minimum height=0.6cm] at (0.5,2.5) (env1) {包络检波};
+        \node[rectangle, draw, minimum width=1cm, minimum height=0.6cm] at (0.5,1.1) (env2) {包络检波};
+        \draw[-] (-0.2,2.5) -- (0,2.5);
+        \draw[-] (-0.2,1.1) -- (0,1.1);
+        \draw[-] (1,2.5) -- (1.5,2.5);
+        \draw[-] (1,1.1) -- (1.5,1.1);
+        
+        % Comparator
+        \node[circle, draw, minimum width=0.8cm] at (2.2,1.8) (comp) {$<$};
+        \draw[-] (1.5,2.5) -- (1.9,2.5) -- (1.9,1.8);
+        \draw[-] (1.5,1.1) -- (1.8,1.1) -- (1.8,1.8);
+        \draw[-] (2.6,1.8) -- (3.5,1.8) node[right] {$m(t)$};
+    \end{tikzpicture}
+    \caption{FSK非相干解调}
+    \label{fig:fsk_noncoherent}
+\end{figure}
+
+\textbf{工作原理}：
+\begin{enumerate}
+    \item 带通滤波器分别提取 $f_1$ 和 $f_2$ 两个频带的信号
+    \item 包络检波器分别检测两个频带的信号包络
+    \item 比较器比较两个包络的大小，判决输出
+\end{enumerate}
+
+\subparagraph{相干解调}
+
+使用两个与发射端载波同步的本地振荡器：
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=0.85]
+        % Coherent FSK demodulator
+        \draw[dashed, fill=purple!10] (-3,0) rectangle (4.5,3.5) node[above] {FSK相干解调};
+        
+        % Input
+        \draw[->] (-3.5,1.8) -- (-3,1.8) node[left] {$s_{\text{FSK}}(t)$};
+        
+        % Two branches
+        % Branch 1 (f1)
+        \node[rectangle, draw, minimum width=0.8cm, minimum height=0.6cm] at (-1.5,2.5) (mul1) {$\times f_1$};
+        \node[rectangle, draw, minimum width=1cm, minimum height=0.6cm] at (0,2.5) (lpf1) {低通};
+        \draw[-] (-3,1.8) -- (-2.8,1.8) -- (-2.8,2.5) -- (-1.9,2.5);
+        \draw[-] (-1.1,2.5) -- (-0.5,2.5);
+        \draw[-] (0.5,2.5) -- (1.2,2.5) -- (1.2,2);
+        
+        % Branch 2 (f2)
+        \node[rectangle, draw, minimum width=0.8cm, minimum height=0.6cm] at (-1.5,1.1) (mul2) {$\times f_2$};
+        \node[rectangle, draw, minimum width=1cm, minimum height=0.6cm] at (0,1.1) (lpf2) {低通};
+        \draw[-] (-3,1.8) -- (-2.8,1.8) -- (-2.8,1.1) -- (-1.9,1.1);
+        \draw[-] (-1.1,1.1) -- (-0.5,1.1);
+        \draw[-] (0.5,1.1) -- (1.2,1.1) -- (1.2,1.6);
+        
+        % Decision
+        \node[circle, draw, minimum width=0.8cm] at (2,1.8) (comp) {$-$};
+        \node at (1.6,1.9) {$+$};
+        \node at (1.6,1.7) {$-$};
+        \draw[-] (1.2,2) -- (1.6,2);
+        \draw[-] (1.2,1.6) -- (1.6,1.6);
+        \draw[-] (2.4,1.8) -- (3,1.8) node[right] {$m(t)$};
+    \end{tikzpicture}
+    \caption{FSK相干解调}
+    \label{fig:fsk_coherent}
+\end{figure}
+
+\subparagraph{鉴频器解调}
+
+使用鉴频器直接检测频率变化：
+\begin{equation}
+    v(t) = K_d \cdot \frac{d\phi(t)}{dt} \propto K_d \cdot [f(t) - f_c]
+\end{equation}
+
+常用的鉴频器类型包括：
+\begin{itemize}
+    \item 平衡鉴频器
+    \item 差分鉴频器
+    \item 锁相环鉴频器
+\end{itemize}
+
+\subsubsection{FSK性能特点}
+
+在AWGN信道中，FSK系统的误码率：
+
+\textbf{相干解调}：
+\begin{equation}
+    P_e^{\text{FSK,coh}} = Q\left(\sqrt{\frac{E_b}{N_0}}\right)
+\end{equation}
+
+\textbf{非相干解调}：
+\begin{equation}
+    P_e^{\text{FSK,noncoh}} = \frac{1}{2}\exp\left(-\frac{E_b}{2N_0}\right)
+\end{equation}
+
+\begin{table}[htbp]
+    \centering
+    \caption{FSK与ASK性能对比}
+    \begin{tabular}{l|c|c|c}
+        \hline
+        调制方式 & 带宽需求 & 误码率（相干） & 误码率（非相干） \\
+        \hline
+        ASK & $2/T_b$ & $Q(\sqrt{E_b/N_0})$ & $\frac{1}{2}e^{-E_b/2N_0}$ \\
+        \hline
+        BFSK & $\approx 2/T_b$ & $Q(\sqrt{E_b/N_0})$ & $\frac{1}{2}e^{-E_b/2N_0}$ \\
+        \hline
+        DBPSK & $2/T_b$ & $Q(\sqrt{2E_b/N_0})$ & $\frac{1}{2}e^{-E_b/N_0}$ \\
+        \hline
+    \end{tabular}
+    \label{tab:fsk_ask_comparison}
+\end{table}
+
+\textbf{FSK的特点}：
+\begin{itemize}
+    \item \textbf{抗噪声性能好}：幅度噪声对频率影响较小
+    \item \textbf{带宽需求较大}：约为ASK的2倍
+    \item \textbf{功率效率恒定}：恒包络调制，适合非线性功率放大器
+    \item \textbf{多普勒敏感性}：高速移动场景下频率偏移影响较大
+\end{itemize}
+
+\textbf{应用场景}：
+\begin{itemize}
+    \item 早期无线电通信（如业余无线电）
+    \item 寻呼系统
+    \item 低速Modem
+    \item 工业控制与遥测
+\end{itemize}
+
+\section{载波同步技术}
+\label{sec:carrier_sync}
+
+对于BPSK、QPSK等抑制载波的调制方式，接收端需要恢复载波才能进行相干解调。
+
+\subsection{载波同步的必要性}
+
+在抑制载波调制中（如BPSK、QPSK）：
+\begin{equation}
+    s(t) = A \cdot m(t) \cdot \cos(2\pi f_c t)
+\end{equation}
+由于 $m(t)$ 是双极性信号（如$\pm1$），信号频谱中不包含载波分量，无法直接用滤波器提取。
+
+因此需要使用非线性处理来恢复载波信息。
+
+\subsection{锁相环（PLL）}
+\label{sec:pll}
+
+锁相环是载波同步的核心技术，由三个基本部件组成：
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=0.9]
+        % PLL block diagram
+        \node[rectangle, draw, minimum width=1.2cm, minimum height=0.8cm] at (0,0) (pd) {鉴相器};
+        \node[rectangle, draw, minimum width=1.2cm, minimum height=0.8cm] at (2.5,0) (lf) {环路滤波器};
+        \node[rectangle, draw, minimum width=1.2cm, minimum height=0.8cm] at (5,0) (vco) {VCO};
+        
+        % Connections
+        \draw[->] (0.6,0) -- (1.9,0) node[above] {$v_c(t)$};
+        \draw[->] (3.1,0) -- (4.4,0) node[above] {$v_f(t)$};
+        \draw[->] (5.6,0) -- (6.5,0) node[right] {$2\cos(2\pi f_c t + \phi)$};
+        
+        % Feedback
+        \draw[-] (5,0.8) -- (5,1.5) -- (-1.5,1.5) -- (-1.5,0.3);
+        \draw[-] (-1.5,0) -- (-0.6,0);
+        
+        % Input
+        \draw[->] (-1.5,-0.3) -- (-0.6,0) node[above] {$r(t)$};
+        
+        % Labels
+        \node at (1.25,-0.5) {误差电压};
+        \node at (3.75,-0.5) {控制电压};
+    \end{tikzpicture}
+    \caption{锁相环基本结构}
+    \label{fig:pll_basic}
+\end{figure}
+
+\textbf{鉴相器（PD）}：比较输入信号与VCO输出信号的相位差，产生误差电压：
+\begin{equation}
+    v_e(t) = K_d \sin[\theta_i(t) - \theta_o(t)]
+\end{equation}
+
+\textbf{环路滤波器（LF）}：滤除噪声和纹波，提供环路稳定性：
+\begin{equation}
+    H(s) = \frac{1 + s\tau_2}{1 + s\tau_1}
+\end{equation}
+
+\textbf{压控振荡器（VCO）}：根据控制电压调整输出频率：
+\begin{equation}
+    \omega_{\text{VCO}}(t) = \omega_c + K_v \cdot v_f(t)
+\end{equation}
+
+\subsection{平方环}
+\label{sec:square_loop}
+
+平方环利用平方运算产生载波的二次谐波，然后通过锁相环提取：
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=0.85]
+        % Square law loop
+        \node[rectangle, draw, fill=blue!10] at (0,0) (sq) {平方器};
+        \node[rectangle, draw, fill=green!10] at (3,0) (pll) {PLL};
+        \node[rectangle, draw, fill=yellow!20] at (6,0) (div) {2分频};
+        
+        % Input
+        \draw[->] (-2,0) -- (-0.5,0) node[above] {$s_{\text{BPSK}}(t)$};
+        
+        % Through
+        \draw[->] (0.5,0) -- (2.4,0);
+        \draw[->] (3.6,0) -- (5.4,0);
+        \draw[->] (6.5,0) -- (7.5,0) node[right] {$\cos(2\pi f_c t)$};
+        
+        % Feedback
+        \draw[-] (6,0.8) -- (6,1.3) -- (-1.5,1.3) -- (-1.5,-0.5);
+        \draw[-] (-1.5,0) -- (-1,0);
+        
+        % Labels
+        \node at (1.5,-0.6) {$[s(t)]^2 \approx \frac{A^2}{2}[1 + \cos(4\pi f_c t)]$};
+    \end{tikzpicture}
+    \caption{平方环载波恢复电路}
+    \label{fig:square_loop}
+\end{figure}
+
+\textbf{工作原理}：
+\begin{enumerate}
+    \item 平方运算：$[A\cos(2\pi f_c t)]^2 = \frac{A^2}{2}[1 + \cos(4\pi f_c t)]$
+    \item 产生二倍频分量 $2f_c$
+    \item PLL锁定 $2f_c$ 分量
+    \item 2分频得到原始载波
+\end{enumerate}
+
+\textbf{问题}：分频后存在 $180^{\circ}$ 相位模糊，即：
+\begin{equation}
+    \frac{1}{2}\cos(4\pi f_c t + \pi) = \frac{1}{2}\cos(4\pi f_c t - \pi)
+\end{equation}
+恢复的载波可能是 $\cos(2\pi f_c t)$ 或 $\cos(2\pi f_c t + \pi)$。
+
+\subsection{科斯塔斯环}
+\label{sec:costas_loop}
+
+科斯塔斯环（Costas Loop）是一种不需要分频的载波恢复环：
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=0.8]
+        % Costas loop
+        \draw[dashed, fill=gray!10] (-2.5,-1.5) rectangle (4.5,2) node[above] {科斯塔斯环};
+        
+        % Input
+        \draw[->] (-3,0) -- (-2.5,0) node[left] {$s(t)$};
+        \draw[-] (-2.5,0) -- (-2.5,-0.8) -- (-0.5,-0.8);
+        \draw[-] (-2.5,0) -- (-2.5,0.8) -- (-0.5,0.8);
+        
+        % I branch
+        \node[circle, draw, minimum width=0.5cm] at (0,0.8) (mul1) {$\times$};
+        \node[rectangle, draw, minimum width=0.8cm, minimum height=0.5cm] at (1.2,0.8) (lpf1) {LPF};
+        \draw[-] (0.5,0.8) -- (0.8,0.8);
+        \draw[-] (1.6,0.8) -- (2,0.8);
+        \node at (1,1.4) {I路};
+        
+        % Q branch
+        \node[circle, draw, minimum width=0.5cm] at (0,-0.8) (mul2) {$\times$};
+        \node[rectangle, draw, minimum width=0.8cm, minimum height=0.5cm] at (1.2,-0.8) (lpf2) {LPF};
+        \draw[-] (0.5,-0.8) -- (0.8,-0.8);
+        \draw[-] (1.6,-0.8) -- (2,-0.8);
+        \node at (1,-0.2) {Q路};
+        
+        % VCO
+        \node[rectangle, draw, minimum width=1cm, minimum height=0.6cm] at (-1,0) (vco) {VCO};
+        \draw[-] (-1,0.3) -- (-1,0.5) -- (-0.3,0.5) -- (-0.3,0.8);
+        \draw[-] (-1,-0.3) -- (-1,-0.5) -- (0.3,-0.5) -- (0.3,-0.8);
+        
+        % Phase shifter
+        \node[rectangle, draw, minimum width=0.6cm, minimum height=0.5cm] at (-1.2,0) (ps) {$90^\circ$};
+        
+        % Decision
+        \node[circle, draw, minimum width=0.5cm] at (2.8,0) (mul3) {$\times$};
+        \node[rectangle, draw, minimum width=0.8cm, minimum height=0.5cm] at (3.8,0) (lf) {LPF};
+        \draw[->] (2,0.8) -- (2.55,0.8) -- (2.55,0.3);
+        \draw[-] (2,-0.8) -- (2.55,-0.8) -- (2.55,-0.3);
+        \draw[->] (3.1,0) -- (3.4,0);
+        \draw[->] (4.2,0) -- (5,0) node[right] {VCO控制};
+    \end{tikzpicture}
+    \caption{科斯塔斯环结构}
+    \label{fig:costas_loop}
+\end{figure}
+
+\textbf{优点}：
+\begin{itemize}
+    \item 不需要平方和分频
+    \item 工作频率更低，电路更容易实现
+    \item 抖动性能更好
+\end{itemize}
+
+\textbf{问题}：存在 $90^{\circ}$ 相位模糊，需要使用差分编码或训练序列来解决。
+
+\subsection{前导码辅助同步}
+\label{sec:pilot_sync}
+
+在突发通信或快速同步场景中，常用前导码（训练序列）辅助载波同步：
+
+\textbf{自相关前导码特性}：
+\begin{itemize}
+    \item 良好的自相关峰值，便于定时同步
+    \item 零自相关旁瓣（CAZAC序列）
+    \item 常用序列：Zadoff-Chu序列、m序列、Gold序列
+\end{itemize}
+
+\textbf{同步过程}：
+\begin{enumerate}
+    \item 接收端检测前导码位置
+    \item 利用前导码估计载波相位偏移
+    \item 对后续数据使用估计的相位进行补偿
+\end{enumerate}
+
+\textbf{示例（802.11前导码）}：
+\begin{itemize}
+    \item 短训练序列：10个重复的STS，用于AGC、定时同步
+    \item 长训练序列：2个重复的LTS，用于信道估计、载波同步
+\end{itemize}
+
+\section{模拟调制体系}
+\label{sec:analog_modulation_system}
+
+模拟调制是数字调制的基础，理解模拟调制有助于深入理解调制原理。
+
+\subsection{幅度调制（AM）}
+\label{sec:am_modulation}
+
+幅度调制是最基本的模拟调制方式，载波幅度随调制信号线性变化。
+
+\subsubsection{标准AM表达式}
+
+\begin{equation}
+    s_{\text{AM}}(t) = A_c[1 + m \cdot m(t)]\cos(2\pi f_c t)
+\end{equation}
+
+其中：
+\begin{itemize}
+    \item $A_c$：载波幅度
+    \item $m(t)$：归一化调制信号（$|m(t)| \leq 1$）
+    \item $m$：调幅系数（$0 \leq m \leq 1$）
+\end{itemize}
+
+当 $m > 1$ 时发生过调（overmodulation），信号失真。
+
+\subsubsection{AM频谱分析}
+
+设调制信号 $m(t)$ 的频谱为 $M(f)$，则AM信号的频谱为：
+\begin{equation}
+    S_{\text{AM}}(f) = \frac{A_c}{2}[\delta(f - f_c) + \delta(f + f_c)] + \frac{A_c m}{2}[M(f - f_c) + M(f + f_c)]
+\end{equation}
+
+\textbf{频谱组成}：
+\begin{itemize}
+    \item 载波分量：$\pm f_c$ 处的冲激
+    \item 上边带：$M(f)$ 平移到 $+f_c$
+    \item 下边带：$M(f)$ 平移到 $-f_c$
+\end{itemize}
+
+\subsubsection{AM功率分析}
+
+调制信号总功率：
+\begin{equation}
+    P_{\text{AM}} = \frac{A_c^2}{2}[1 + \frac{m^2 P_m}{2}]
+\end{equation}
+
+其中 $P_m$ 是调制信号的归一化功率。
+
+\textbf{功率分配}：
+\begin{itemize}
+    \item 载波功率：$P_c = \frac{A_c^2}{2}$
+    \item 边带功率：$P_{SB} = \frac{m^2 A_c^2}{4} \cdot P_m$
+\end{itemize}
+
+\textbf{调制效率}：传输有用信息的边带功率与总功率之比：
+\begin{equation}
+    \eta_{\text{AM}} = \frac{P_{SB}}{P_{\text{AM}}} = \frac{m^2 P_m}{2 + m^2 P_m}
+\end{equation}
+
+对于单音调制（$m(t) = \cos(2\pi f_m t)$，$P_m = 1/2$）：
+\begin{equation}
+    \eta_{\text{AM}} = \frac{m^2}{2 + m^2}
+\end{equation}
+当 $m=1$ 时，最大效率仅为 $33\%$。
+
+\subsection{双边带抑制载波（DSB-SC）}
+\label{sec:dsb_sc}
+
+DSB-SC调制去掉载波分量，只保留两个边带：
+
+\begin{equation}
+    s_{\text{DSB}}(t) = A_c \cdot m(t) \cdot \cos(2\pi f_c t)
+\end{equation}
+
+\textbf{特点}：
+\begin{itemize}
+    \item 调制效率$100\%$（所有功率都用于信息传输）
+    \item 频谱宽度是基带信号的2倍
+    \item 解调需要相干检测
+    \item 包络与 $|m(t)|$ 成正比，当 $m(t)$ 过零时发生相位反转
+\end{itemize}
+
+\textbf{应用}：
+\begin{itemize}
+    \item 模拟电视的声音副载波
+    \item 立体声广播的导频信号
+\end{itemize}
+
+\subsection{单边带调制（SSB）}
+\label{sec:ssb_modulation}
+
+SSB调制只保留一个边带，进一步提高频谱效率：
+
+\begin{equation}
+    s_{\text{SSB}}(t) = \frac{A_c}{2}m(t)\cos(2\pi f_c t) \pm \frac{A_c}{2}\hat{m}(t)\sin(2\pi f_c t)
+\end{equation}
+
+其中 $\hat{m}(t)$ 是 $m(t)$ 的Hilbert变换。
+
+\textbf{上边带（USB）}：$+$ 号
+\textbf{下边带（LSB）}：$-$ 号
+
+\textbf{特点}：
+\begin{itemize}
+    \item 带宽只有基带信号的一半
+    \item 调制效率$100\%$
+    \item 解调需要复杂的相干检测
+\end{itemize}
+
+\textbf{产生方法}：
+
+\textbf{滤波法}：先产生DSB信号，然后通过尖锐的滤波器滤除一个边带。
+
+\textbf{相移法}（Hartley调制器）：
+\begin{enumerate}
+    \item $m(t)$ 与 $\cos(2\pi f_c t)$ 相乘得到同相分量
+    \item $\hat{m}(t)$ 与 $\sin(2\pi f_c t)$ 相乘得到正交分量
+    \item 两分量相加/相减得到上/下边带
+\end{enumerate}
+
+\textbf{应用}：
+\begin{itemize}
+    \item 短波通信
+    \item 电话系统
+    \item 业余无线电
+\end{itemize}
+
+\subsection{残留边带调制（VSB）}
+\label{sec:vsb_modulation}
+
+VSB是SSB和DSB的折中方案：
+
+\begin{equation}
+    S_{\text{VSB}}(f) = H_{\text{VSB}}(f) \cdot \frac{A_c}{2}[M(f-f_c) + M(f+f_c)]
+\end{equation}
+
+其中 $H_{\text{VSB}}(f)$ 是残留边带滤波器特性。
+
+\textbf{特点}：
+\begin{itemize}
+    \item 保留一个完整边带和另一个边带的部分
+    \item 带宽介于SSB和DSB之间
+    \item 适合低频分量丰富的信号（如电视图像）
+\end{itemize}
+
+\textbf{应用}：电视广播（VSB-ADTV）
+
+\subsection{角度调制}
+\label{sec:angle_modulation}
+
+角度调制包括调频（FM）和调相（PM），是恒包络调制。
+
+\subsubsection{调频（FM）}
+
+瞬时频率随调制信号线性变化：
+\begin{equation}
+    s_{\text{FM}}(t) = A_c \cos\left[2\pi f_c t + 2\pi k_f \int_0^t m(\tau) d\tau\right]
+\end{equation}
+
+其中 $k_f$ 是调频灵敏度（Hz/V）。
+
+\textbf{调频指数}：
+\begin{equation}
+    \beta = \frac{\Delta f_{\text{peak}}}{f_m} = \frac{k_f |m(t)|_{\text{max}}}{f_m}
+\end{equation}
+
+其中 $\Delta f_{\text{peak}}$ 是峰值频偏，$f_m$ 是调制信号频率。
+
+\subsubsection{调相（PM）}
+
+瞬时相位随调制信号线性变化：
+\begin{equation}
+    s_{\text{PM}}(t) = A_c \cos\left[2\pi f_c t + k_p m(t)\right]
+\end{equation}
+
+其中 $k_p$ 是调相灵敏度（rad/V）。
+
+\textbf{FM与PM的关系}：
+\begin{equation}
+    \text{FM: } \phi(t) = 2\pi k_f \int_0^t m(\tau) d\tau \quad \Leftrightarrow \quad \text{PM: } \phi(t) = k_p m(t)
+\end{equation}
+FM和PM本质上是可以相互转换的。
+
+\subsubsection{FM频谱特性}
+
+单音调频信号的频谱由Bessel函数展开：
+\begin{equation}
+    s_{\text{FM}}(t) = A_c \sum_{n=-\infty}^{\infty} J_n(\beta) \cos[(2\pi f_c + 2\pi n f_m)t]
+\end{equation}
+
+其中 $J_n(\beta)$ 是第一类Bessel函数。
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=0.85]
+        % FM spectrum illustration
+        \draw[->] (-5,0) -- (5,0) node[right] {$f$};
+        \draw[->] (0,-0.5) -- (0,3);
+        
+        % Carrier
+        \draw[thick, blue] (0,2) -- (0,2.2);
+        \node[blue] at (0,2.4) {$J_0(\beta)$};
+        \node at (0,-0.3) {$f_c$};
+        
+        % Sidebands
+        \foreach \n/\offset/\j in {1/1/0.44, -1/-1/0.44, 2/2/0.11, -2/-2/0.11, 3/3/0.02, -3/-3/0.02} {
+            \draw[thick, blue] (\offset*1.2, \j*5) -- (\offset*1.2, \j*5+0.2);
+            \node at (\offset*1.2, -0.3) {$f_c + \n f_m$};
+        }
+        
+        % Labels
+        \node at (3,-0.3) {$\cdots$};
+        \node at (-3,-0.3) {$\cdots$};
+        
+        \node at (4.5,2.5) {Bessel函数决定各分量幅度};
+    \end{tikzpicture}
+    \caption{单音调频信号的频谱}
+    \label{fig:fm_spectrum}
+\end{figure}
+
+\textbf{Carson's Rule带宽估计}：
+\begin{equation}
+    B_{\text{FM}} \approx 2(\Delta f_{\text{peak}} + f_m) = 2f_m(\beta + 1)
+\end{equation}
+
+当 $\beta \gg 1$（宽带FM）时，$B_{\text{FM}} \approx 2\Delta f_{\text{peak}}$
+
+当 $\beta \ll 1$（窄带FM）时，$B_{\text{FM}} \approx 2f_m$
+
+\subsubsection{FM抗噪声性能}
+
+FM系统的输出信噪比：
+\begin{equation}
+    \left(\frac{S}{N}\right)_{\text{out}} = 3\beta^2 (\beta + 1) \left(\frac{S}{N}\right)_{\text{in}}
+\end{equation}
+
+\textbf{信噪比改善因子}：相对于基带传输，FM带来信噪比增益：
+\begin{equation}
+    G = \frac{(S/N)_{\text{out}}}{(S/N)_{\text{in}}} = 3\beta^2 (\beta + 1)
+\end{equation}
+
+对于宽带FM（$\beta \gg 1$），$G \approx 3\beta^2$
+
+\textbf{门限效应}：当输入信噪比低于某一门限时，FM输出质量急剧恶化。典型门限约为 $(S/N)_{\text{in}} \approx 10\text{dB}$。
+
+\subsubsection{预加重与去加重}
+
+为了改善FM的噪声性能，采用预加重和去加重技术：
+
+\textbf{原理}：
+\begin{itemize}
+    \item 发射端：高频提升（预加重）
+    \item 接收端：高频衰减（去加重）
+    \item 整体频率响应保持平坦
+    \item 噪声被有效抑制
+\end{itemize}
+
+\textbf{标准去加重时间常数}：
+\begin{itemize}
+    \item 广播FM：$\tau = 75\mu s$
+    \item 电视伴音：$\tau = 50\mu s$ 或 $75\mu s$
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=0.85]
+        % Pre-emphasis and de-emphasis
+        \draw[dashed, fill=blue!10] (-2.5,1.5) rectangle (0,3) node[above] {预加重};
+        \draw[dashed, fill=green!10] (2,1.5) rectangle (4.5,3) node[above] {去加重};
+        
+        % Signal path
+        \draw[->] (-3.5,2.2) -- (-2.5,2.2) node[left] {$m(t)$};
+        \draw[->] (0,2.2) -- (2,2.2);
+        \draw[->] (4.5,2.2) -- (5.5,2.2) node[right] {$\hat{m}(t)$};
+        
+        % Frequency response
+        \draw[dashed, fill=red!10] (-2.5,0) rectangle (0,1.2) node[below] {};
+        \draw[dashed, fill=red!10] (2,0) rectangle (4.5,1.2) node[below] {};
+        
+        % Pre-emphasis curve
+        \draw[thick, blue, domain=-1.5:-0.3] plot (\x, {0.3 + 1.5*exp(\x+1.5)});
+        \node[blue] at (-1.5,0.8) {$H_{PE}(f)$};
+        
+        % De-emphasis curve
+        \draw[thick, green, domain=0.3:2] plot (\x, {1.5*exp(-0.8*(\x-0.3))});
+        \node[green] at (2.8,0.8) {$H_{DE}(f)$};
+        
+        % Combined
+        \draw[->] (2.5,0.5) -- (4,0.5);
+        \draw[dashed] (0.5,-0.3) -- (4,-0.3);
+        \node at (2.5,-0.5) {$H_{PE}(f) \cdot H_{DE}(f) \approx 1$};
+    \end{tikzpicture}
+    \caption{预加重与去加重}
+    \label{fig:pre_de_emphasis}
+\end{figure}
+
+\subsection{模拟调制综合比较}
+\label{sec:analog_mod_comparison}
+
+\begin{table}[htbp]
+    \centering
+    \caption{模拟调制方式综合比较}
+    \begin{tabular}{l|c|c|c|c}
+        \hline
+        调制方式 & 带宽 & 功率效率 & 抗噪声性能 & 电路复杂度 \\
+        \hline
+        AM & $2B_m$ & 低 & 差 & 简单 \\
+        DSB-SC & $2B_m$ & 高 & 中等 & 中等（需相干解调） \\
+        SSB & $B_m$ & 高 & 中等 & 复杂（需滤波器/相移） \\
+        VSB & $B_m \sim 2B_m$ & 中高 & 较好 & 复杂 \\
+        FM (NB) & $\approx 2f_m$ & 高 & 较好 & 中等 \\
+        FM (WB) & $2(\Delta f + f_m)$ & 高 & 好 & 中等 \\
+        \hline
+    \end{tabular}
+    \label{tab:analog_mod_comparison}
+\end{table}
+
+\textbf{选择原则}：
+\begin{itemize}
+    \item 频谱受限：选择SSB或VSB
+    \item 功率受限：选择FM
+    \item 简单实现：选择AM或非相干FM
+    \item 高质量传输：选择宽带FM
+\end{itemize}
+
+% 本节小结
+\subsection*{本章小结}
+
+本节补充了以下内容：
+
+\begin{enumerate}
+    \item \textbf{ASK调制解调}：
+    \begin{itemize}
+        \item 调制原理与数学表达式
+        \item 调制器结构（乘法器/开关）
+        \item 包络检波（非相干）和相干解调方法
+        \item 性能分析与误码率表达式
+    \end{itemize}
+    
+    \item \textbf{FSK调制解调}：
+    \begin{itemize}
+        \item 标记/空号频率的BFSK原理
+        \item 双振荡器和VCO两种调制器结构
+        \item 非相干解调、相干解调、鉴频器三种解调方法
+        \item FSK与ASK的性能对比
+    \end{itemize}
+    
+    \item \textbf{载波同步技术}：
+    \begin{itemize}
+        \item PLL的基本结构与工作原理
+        \item 平方环：利用二次谐波恢复载波
+        \item 科斯塔斯环：不需要分频的载波恢复
+        \item 前导码辅助同步方法
+    \end{itemize}
+    
+    \item \textbf{模拟调制体系}：
+    \begin{itemize}
+        \item AM/DSB-SC/SSB/VSB的原理与频谱特性
+        \item FM/PM的关系与Carson's Rule带宽
+        \item FM的Bessel函数频谱分析
+        \item 预加重/去加重技术
+    \end{itemize}
+\end{enumerate}
+
+这些内容与主章节中的PSK、QAM等内容共同构成了完整的调制解调知识体系。
