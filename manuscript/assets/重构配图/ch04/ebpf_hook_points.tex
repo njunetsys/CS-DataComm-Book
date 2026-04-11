@@ -1,0 +1,121 @@
+% eBPF内核Hook点示意图
+% 展示eBPF在内核中的各个Hook点位置
+
+\documentclass[tikz,border=10pt]{standalone}
+\usepackage{tikz}
+\usepackage{ctex}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, fit, backgrounds, decorations.pathmorphing}
+
+\begin{document}
+\begin{tikzpicture}[
+    node distance=0.3cm,
+    layer/.style={rectangle, draw, minimum width=12cm, minimum height=0.9cm, align=center, font=\small},
+    hook/.style={rectangle, rounded corners, draw, fill=red!25, minimum width=2cm, minimum height=0.6cm, align=center, font=\scriptsize},
+    userbox/.style={rectangle, draw, fill=blue!15, minimum width=3cm, minimum height=0.7cm, align=center, font=\scriptsize},
+    arrow/.style={-{Stealth[length=2mm]}, thick},
+    packet/.style={circle, draw, fill=green!30, minimum size=0.5cm, font=\tiny},
+    bpfprog/.style={rectangle, rounded corners, draw, fill=red!15, minimum width=1.8cm, minimum height=0.5cm, font=\tiny}
+]
+
+% 标题
+\node[font=\large\bfseries] at (6, 6.5) {eBPF在内核中的Hook点分布};
+
+% ============ 用户空间 ============
+\node[layer, fill=blue!10] (user) at (6, 5.5) {\textbf{用户空间}};
+
+% 用户空间应用
+\node[userbox] (app1) at (2, 4.5) {应用程序};
+\node[userbox] (app2) at (6, 4.5) {系统调用};
+\node[userbox] (app3) at (10, 4.5) {用户态追踪};
+
+% ============ 系统调用层 ============
+\node[layer, fill=purple!10] (syscall) at (6, 3.5) {\textbf{系统调用层}};
+
+\node[hook] (kprobe) at (3, 3.5) {kprobe/kretprobe};
+\node[hook] (tracepoint) at (7, 3.5) {tracepoint};
+\node[hook] (lsm) at (11, 3.5) {LSM};
+
+% ============ Socket层 ============
+\node[layer, fill=green!10] (socket) at (6, 2.3) {\textbf{Socket层}};
+
+\node[hook] (sockops) at (2.5, 2.3) {sockops};
+\node[hook] (sk-skfilter) at (5.5, 2.3) {sk\_filter};
+\node[hook] (sk-msg) at (8.5, 2.3) {sk\_msg};
+\node[hook] (sk-reuseport) at (11.5, 2.3) {reuseport};
+
+% ============ 网络协议栈层 ============
+\node[layer, fill=orange!10] (network) at (6, 1.1) {\textbf{网络协议栈}};
+
+\node[hook] (tc) at (4, 1.1) {TC (流量控制)};
+\node[hook] (lwt) at (8, 1.1) {LWT (轻量级隧道)};
+\node[hook] (flow-dissector) at (11.5, 1.1) {流解析器};
+
+% ============ XDP层 ============
+\node[layer, fill=red!15] (xdp-layer) at (6, -0.1) {\textbf{XDP (eXpress Data Path)}};
+
+\node[hook, fill=red!35] (xdp) at (6, -0.1) {XDP程序执行点};
+
+% ============ 网卡驱动层 ============
+\node[layer, fill=gray!20] (driver) at (6, -1.3) {\textbf{网卡驱动层}};
+
+% ============ 硬件层 ============
+\node[layer, fill=gray!40] (hw) at (6, -2.3) {\textbf{网卡硬件}};
+
+% ============ 数据包流动路径 ============
+% 入站路径
+\node[packet] (pkt-in) at (0, -2.3) {包};
+\draw[arrow, green!50!black, dashed] (pkt-in) -- (1, -2.3) -- (1, -1.3) -- (3, -1.3) -- (3, -0.1);
+\draw[arrow, green!50!black, dashed] (3, -0.1) -- (3, 1.1) -- (3, 2.3) -- (3, 3.5) -- (3, 4.5) -- (2, 4.5);
+
+% 出站路径
+\node[packet] (pkt-out) at (12, -2.3) {包};
+\draw[arrow, blue!50!black, dashed] (app1) -- (1, 4.5) -- (1, 3.5) -- (1, 2.3) -- (1, 1.1) -- (1, -0.1) -- (1, -1.3) -- (1, -2.3) -- (pkt-out);
+
+% ============ 右侧：eBPF程序类型说明 ============
+\node[right=0.5cm of user, font=\scriptsize, anchor=west] {
+    \begin{tabular}{|l|l|}
+    \hline
+    \textbf{Hook点} & \textbf{用途} \\
+    \hline
+    XDP & 最早包处理点，性能最高 \\
+    TC & 流量整形、分类、重定向 \\
+    Socket & Socket层过滤、负载均衡 \\
+    kprobe & 内核函数追踪 \\
+    tracepoint & 静态内核事件追踪 \\
+    LSM & 安全策略强制执行 \\
+    \hline
+    \end{tabular}
+};
+
+% ============ 底部：eBPF加载流程 ============
+\node[below=3.5cm of driver, font=\scriptsize, text width=14cm, align=left, draw, rounded corners, fill=gray!10] {
+    \textbf{eBPF程序加载与执行流程：}\\[3pt]
+    1. \textbf{编译}：C/Rust代码通过clang编译为eBPF字节码\\
+    2. \textbf{验证}：内核验证器检查程序安全性（无死循环、无非法内存访问）\\
+    3. \textbf{JIT}：字节码编译为本地机器码\\
+    4. \textbf{挂载}：程序挂载到指定Hook点\\
+    5. \textbf{执行}：事件触发时eBPF程序执行，通过Map与用户空间通信
+};
+
+% ============ Map机制说明 ============
+\node[right=0.5cm of xdp-layer, font=\tiny, text width=3cm, align=left, draw, fill=yellow!15, rounded corners] {
+    \textbf{eBPF Map：}\\
+    内核键值存储\\
+    程序间共享数据\\
+    用户空间通信\\
+    O(1)查找复杂度
+};
+
+% ============ 性能对比标注 ============
+\node[left=0.5cm of driver, font=\tiny, text width=2cm, align=center, draw, fill=green!15, rounded corners] {
+    \textbf{XDP性能}\\
+    延迟：$\sim$1μs\\
+    吞吐量：线速
+};
+
+% 箭头标注
+\draw[->, thick, red] (kprobe) -- (8, 3.5) node[right, font=\tiny] {内核函数入口/出口};
+\draw[->, thick, red] (tc) -- (8, 1.1) node[right, font=\tiny] {入站/出站流量控制};
+
+\end{tikzpicture}
+\end{document}

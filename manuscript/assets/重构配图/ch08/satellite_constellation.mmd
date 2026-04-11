@@ -1,0 +1,37 @@
+graph TB
+    subgraph "地球表面"
+        US[美国<br/>地面站]
+        EU[欧洲<br/>地面站]
+        ASIA[亚洲<br/>地面站]
+        
+        subgraph "用户终端 User Terminals"
+            UT1[卫星天线<br/>相控阵<br/>跟踪卫星]
+            UT2[卫星天线<br/>相控阵<br/>跟踪卫星]
+            UT3[卫星天线<br/>相控阵<br/>跟踪卫星]
+        end
+    end
+    
+    subgraph "低轨星座 LEO Constellation 550km"
+        ORBIT1[轨道层1<br/>550km<br/>~1584颗]
+        ORBIT2[轨道层2<br/>540km<br/>~1584颗]
+        ORBIT3[轨道层3<br/>570km<br/>~720颗]
+    end
+    
+    subgraph "星间通信 Inter-Satellite Links"
+        ISL[激光链路<br/>Laser Links<br/>卫星间路由]
+    end
+    
+    UT1 -->|"20-40ms"| ORBIT1
+    UT2 -->|"20-40ms"| ORBIT2
+    UT3 -->|"20-40ms"| ORBIT3
+    ORBIT1 <-->|"ISL"| ISL
+    ORBIT2 <-->|"ISL"| ISL
+    ORBIT3 <-->|"ISL"| ISL
+    ORBIT1 --> US
+    ORBIT2 --> EU
+    ORBIT3 --> ASIA
+    
+    style ORBIT1 fill:#e1f5fe
+    style ORBIT2 fill:#e8f5e9
+    style ORBIT3 fill:#fff3e0
+    style ISL fill:#fce4ec

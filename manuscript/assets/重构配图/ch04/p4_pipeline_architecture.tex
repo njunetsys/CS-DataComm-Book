@@ -1,0 +1,105 @@
+% P4数据平面架构图
+% 展示解析器→匹配动作表流水线→逆解析器的完整流程
+
+\documentclass[tikz,border=10pt]{standalone}
+\usepackage{tikz}
+\usepackage{ctex}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, shadows}
+
+\begin{document}
+\begin{tikzpicture}[
+    node distance=0.6cm and 0.8cm,
+    box/.style={rectangle, rounded corners, draw, minimum width=2.2cm, minimum height=0.9cm, align=center, font=\small},
+    parser/.style={box, fill=green!20},
+    mat/.style={box, fill=blue!15},
+    deparser/.style={box, fill=orange!20},
+    metadata/.style={box, fill=yellow!20, minimum width=11cm, minimum height=0.6cm},
+    packet/.style={ellipse, draw, fill=gray!15, minimum width=1.5cm, minimum height=0.6cm, font=\scriptsize},
+    arrow/.style={-{Stealth[length=2mm]}, thick},
+    label/.style={font=\scriptsize\bfseries}
+]
+
+% 标题
+\node[font=\large\bfseries] at (6, 3.5) {P4数据平面流水线架构};
+
+% 输入数据包
+\node[packet] (pkt-in) at (0, 2) {原始数据包};
+
+% 解析器
+\node[parser] (parser) at (0, 0) {解析器\\Parser};
+\node[below=0.1cm of parser, font=\scriptsize, text width=2.5cm, align=center] {状态机提取\\包头字段};
+
+% 匹配动作表流水线
+\node[mat] (mat1) at (3, 0) {MAT 1\\L2交换};
+\node[mat] (mat2) at (5.5, 0) {MAT 2\\ACL检查};
+\node[mat] (mat3) at (8, 0) {MAT 3\\L3路由};
+\node[mat] (mat4) at (10.5, 0) {MAT 4\\隧道封装};
+
+% 逆解析器
+\node[deparser] (deparser) at (13.5, 0) {逆解析器\\Deparser};
+\node[below=0.1cm of deparser, font=\scriptsize, text width=2.5cm, align=center] {重组包头\\输出数据包};
+
+% 输出数据包
+\node[packet] (pkt-out) at (13.5, 2) {处理后数据包};
+
+% 元数据总线
+\node[metadata] (meta) at (6.75, -2) {元数据总线：包头字段、处理状态、临时变量};
+
+% 动作单元
+\node[box, fill=purple!15, minimum width=1.8cm] (action1) at (3, -1.2) {动作单元};
+\node[box, fill=purple!15, minimum width=1.8cm] (action2) at (5.5, -1.2) {动作单元};
+\node[box, fill=purple!15, minimum width=1.8cm] (action3) at (8, -1.2) {动作单元};
+\node[box, fill=purple!15, minimum width=1.8cm] (action4) at (10.5, -1.2) {动作单元};
+
+% 箭头连接
+\draw[arrow] (pkt-in) -- (parser);
+\draw[arrow] (parser) -- (mat1);
+\draw[arrow] (mat1) -- (mat2);
+\draw[arrow] (mat2) -- (mat3);
+\draw[arrow] (mat3) -- (mat4);
+\draw[arrow] (mat4) -- (deparser);
+\draw[arrow] (deparser) -- (pkt-out);
+
+% 元数据连接（虚线）
+\draw[arrow, dashed, gray] (meta) -- (parser);
+\draw[arrow, dashed, gray] (meta) -- (mat1);
+\draw[arrow, dashed, gray] (meta) -- (mat2);
+\draw[arrow, dashed, gray] (meta) -- (mat3);
+\draw[arrow, dashed, gray] (meta) -- (mat4);
+\draw[arrow, dashed, gray] (meta) -- (deparser);
+
+% 动作单元连接
+\draw[arrow, thin] (mat1) -- (action1);
+\draw[arrow, thin] (mat2) -- (action2);
+\draw[arrow, thin] (mat3) -- (action3);
+\draw[arrow, thin] (mat4) -- (action4);
+
+% 解析器详细说明
+\node[below=1.5cm of parser, font=\scriptsize, text width=3cm, align=center, draw, fill=green!10, rounded corners] {
+    \textbf{解析器状态机}\\[2pt]
+    start $\rightarrow$ parse\_eth\\
+    parse\_eth $\rightarrow$ parse\_ip\\
+    parse\_ip $\rightarrow$ parse\_tcp
+};
+
+% MAT详细说明
+\node[below=2.2cm of mat2, font=\scriptsize, text width=4cm, align=center, draw, fill=blue!10, rounded corners] {
+    \textbf{匹配-动作表结构}\\[2pt]
+    匹配键：目的MAC/IP/端口\\
+    匹配类型：精确/前缀/范围/通配\\
+    动作：转发/丢弃/修改/封装
+};
+
+% 图例
+\node[right=0.5cm of pkt-out, font=\scriptsize, anchor=west] {
+    \begin{tabular}{ll}
+    \textcolor{green!50!black}{$\blacksquare$} & 解析器 \\
+    \textcolor{blue!50!black}{$\blacksquare$} & 匹配动作表 \\
+    \textcolor{orange!50!black}{$\blacksquare$} & 逆解析器 \\
+    \textcolor{purple!50!black}{$\blacksquare$} & 动作执行单元 \\
+    \textcolor{gray}{$\blacksquare$} & 数据包 \\
+    \end{tabular}
+};
+
+\end{tikzpicture}
+\end{document}

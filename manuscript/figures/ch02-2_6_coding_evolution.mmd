@@ -1,0 +1,33 @@
+%% 容量章节 - 香农容量与编码演进
+flowchart LR
+    subgraph Theory["理论极限"]
+        Shannon["香农限<br/>-1.59 dB"]
+    end
+    
+    subgraph Coding["编码技术演进"]
+        Conv["卷积码<br/>1970s<br/>~3dB"]
+        Turbo["Turbo码<br/>1993<br/>~0.5dB"]
+        LDPC["LDPC码<br/>1996/5G<br/>~0.5dB"]
+        Polar["Polar码<br/>5G控制信道"]
+    end
+    
+    subgraph Application["应用场景"]
+        Satellite["卫星通信"]
+        LTE4["4G LTE"]
+        NR5["5G NR"]
+    end
+    
+    Shannon -.->|"逼近"| Conv
+    Conv -->|"迭代译码"| Turbo
+    Turbo -->|"并行译码"| LDPC
+    LDPC -->|"信道极化"| Polar
+    
+    Conv --> Satellite
+    Turbo --> LTE4
+    LDPC --> NR5
+    Polar --> NR5
+    
+    style Shannon fill:#ffebee,stroke:#c62828,stroke-width:2px
+    style Turbo fill:#e8f5e9
+    style LDPC fill:#e3f2fd
+    style Polar fill:#fff3e0

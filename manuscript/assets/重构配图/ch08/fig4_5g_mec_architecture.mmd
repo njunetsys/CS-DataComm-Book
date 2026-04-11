@@ -1,0 +1,97 @@
+%% 图4: 5G核心网+MEC架构
+%% 展示5G核心网和边缘计算的融合架构
+
+flowchart TB
+    subgraph Cloud["☁️ 中心云"]
+        direction TB
+        
+        subgraph FiveGCore["5G核心网 (5GC)"]
+            direction LR
+            AMF["AMF
+接入和移动性
+管理功能"]
+            SMF["SMF
+会话管理
+功能"]
+            UPF["UPF
+用户面
+功能"]
+            PCF["PCF
+策略控制
+功能"]
+            UDM["UDM
+统一数据
+管理"]
+        end
+        
+        CloudServices["云服务
+(IMS/应用服务器)"]
+    end
+    
+    subgraph Edge["🌐 边缘数据中心"]
+        direction TB
+        
+        subgraph MEC["📱 MEC平台"]
+            MECPlatform["MEC主机
+(平台层)"]
+            MECApp1["低延迟应用
+AR/VR/云游戏"]
+            MECApp2["IoT数据处理
+实时分析"]
+            MECApp3["视频优化
+CDN缓存"]
+        end
+        
+        LocalUPF["本地UPF
+用户面下沉"]
+    end
+    
+    subgraph RAN["📡 无线接入网"]
+        direction LR
+        gNB["gNB基站
+(5G NR)"]
+        ngNB["ng-eNB
+(4G升级)"]
+    end
+    
+    subgraph UE["📱 终端设备"]
+        UE1["智能手机"]
+        UE2["IoT传感器"]
+        UE3["车载终端"]
+        UE4["AR眼镜"]
+    end
+    
+    %% 连接关系
+    UE1 & UE2 & UE3 & UE4 --> gNB & ngNB
+    gNB & ngNB --> AMF
+    gNB & ngNB --> LocalUPF
+    
+    AMF --> SMF --> UPF
+    SMF -.-> LocalUPF
+    UPF --> CloudServices
+    LocalUPF --> MECPlatform
+    
+    MECPlatform --> MECApp1 & MECApp2 & MECApp3
+    
+    AMF --- PCF --- UDM
+    
+    %% 控制面/用户面分离标注
+    CP["--- 控制面信令"]
+    UP["=== 用户面数据"]
+    
+    %% 样式定义
+    classDef fivegStyle fill:#00BCD4,stroke:#0097A7,stroke-width:2px,color:#fff
+    classDef mecStyle fill:#FF9800,stroke:#F57C00,stroke-width:2px,color:#fff
+    classDef ranStyle fill:#4CAF50,stroke:#388E3C,stroke-width:2px,color:#fff
+    classDef ueStyle fill:#9C27B0,stroke:#7B1FA2,stroke-width:2px,color:#fff
+    classDef cloudStyle fill:#2196F3,stroke:#1976D2,stroke-width:2px,color:#fff
+    classDef edgeStyle fill:#F8F9FA,stroke:#FF9800,stroke-width:2px,stroke-dasharray: 5 5
+    classDef upfLocalStyle fill:#FF5722,stroke:#E64A19,stroke-width:2px,color:#fff
+    
+    class AMF,SMF,UPF,PCF,UDM fivegStyle
+    class MECPlatform,MECApp1,MECApp2,MECApp3 mecStyle
+    class gNB,ngNB ranStyle
+    class UE1,UE2,UE3,UE4 ueStyle
+    class CloudServices,Cloud cloudStyle
+    class Edge,LocalUPF,MEC upfLocalStyle
+    class LocalUPF upfLocalStyle

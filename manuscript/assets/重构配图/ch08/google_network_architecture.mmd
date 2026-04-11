@@ -1,0 +1,32 @@
+graph TB
+    subgraph "数据中心层 Data Center Layer"
+        J[Jupiter<br/>数据中心内部网络<br/>SDN Fabric<br/>1 Pb/s总带宽]
+        B4[B4<br/>数据中心互联WAN<br/>软件定义流量工程<br/>全球数据中心互联]
+        A[Andromeda<br/>网络功能虚拟化<br/>虚拟网络交付<br/>容器/VM网络]
+    end
+    
+    subgraph "边缘层 Edge Layer"
+        E[Espresso<br/>边缘SDN架构<br/>实时性能测量<br/>动态流量路由]
+        M[Maglev<br/>软件负载均衡<br/>一致性哈希<br/>百万级QPS]
+    end
+    
+    subgraph "全球接入 Global Access"
+        ISP[ISP/运营商网络]
+        USER[全球用户]
+    end
+    
+    USER --> ISP
+    ISP --> E
+    E --> M
+    M --> J
+    J <-->|"高速互联"| B4
+    J --> A
+    A -->|"虚拟网络"| J
+    
+    style J fill:#e1f5fe
+    style B4 fill:#e1f5fe
+    style A fill:#e1f5fe
+    style E fill:#fff3e0
+    style M fill:#fff3e0
+    style ISP fill:#e8f5e9
+    style USER fill:#fce4ec

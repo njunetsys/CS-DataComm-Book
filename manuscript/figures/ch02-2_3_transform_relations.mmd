@@ -1,0 +1,31 @@
+%% 信号章节 - 三种变换关系图
+flowchart TB
+    subgraph Time["时域"]
+        CT[连续时间信号]
+        DT[离散时间序列]
+    end
+    
+    subgraph Transform["变换域"]
+        FT["傅里叶变换<br/>s = jω"]
+        LT["拉普拉斯变换<br/>s = σ + jω"]
+        ZT["Z变换<br/>z = e^(sT)"]
+    end
+    
+    subgraph Frequency["频域/复频域"]
+        Freq[频谱分析]
+        SPlane[s平面极零点分析]
+        ZPlane[z平面单位圆分析]
+    end
+    
+    CT -->|"虚轴特例"| FT
+    CT -->|"复平面扩展"| LT
+    LT -->|"z = e^(sT)"| ZT
+    DT -->|"采样"| ZT
+    
+    FT --> Freq
+    LT --> SPlane
+    ZT --> ZPlane
+    
+    style FT fill:#e1f5fe
+    style LT fill:#fff3e0
+    style ZT fill:#f3e5f5

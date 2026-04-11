@@ -1,0 +1,60 @@
+```mermaid
+flowchart TB
+    subgraph Host["EC2 Host"]
+        subgraph App["Application Layer"]
+            NCCL["NCCL / MPI"]
+            Libfabric["Libfabric API"]
+        end
+        
+        subgraph Kernel["Kernel Space"]
+            ENA_Driver["ENA Driver<br/>TCP/IP Stack"]
+            EFA_Driver["EFA Driver<br/>SRD Transport"]
+        end
+        
+        subgraph Nitro["Nitro Card"]
+            subgraph ENA["ENA Device"]
+                ENA_HW["ENA Hardware<br/>VPC Networking"]
+            end
+            
+            subgraph EFA["EFA Device"]
+                SRD_Core["SRD Core Logic<br/>Hardware Offload"]
+                Multipath["Multipath Engine<br/>64 Parallel Paths"]
+                CC["Congestion Control<br/>Sub-ms Retransmit"]
+            end
+        end
+    end
+    
+    subgraph Network["AWS Network"]
+        VPC["VPC Fabric"]
+        Spine["Spine Layer"]
+        Leaf["Leaf Layer"]
+    end
+    
+    NCCL --> Libfabric
+    Libfabric -->|"Standard Path"| ENA_Driver
+    Libfabric -->|"OS-Bypass"| EFA_Driver
+    
+    ENA_Driver --> ENA_HW
+    EFA_Driver --> SRD_Core
+    
+    SRD_Core --> Multipath
+    SRD_Core --> CC
+    
+    ENA_HW -->|"Standard Ethernet"| VPC
+    SRD_Core -->|"SRD Packets<br/>w/ spraying"| VPC
+    
+    VPC --> Spine
+    Spine --> Leaf
+    
+    classDef app fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef kernel fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef nitro fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef network fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef srd fill:#ffebee,stroke:#c62828,stroke-width:3px
+    
+    class NCCL,Libfabric app
+    class ENA_Driver,EFA_Driver kernel
+    class ENA_HW,SRD_Core,Multipath,CC nitro
+    class VPC,Spine,Leaf network
+    class SRD_Core,Multipath,CC srd
+```

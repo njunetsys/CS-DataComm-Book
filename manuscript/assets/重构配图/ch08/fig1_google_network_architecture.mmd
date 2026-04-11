@@ -1,0 +1,56 @@
+%% 图1: Google网络全景 - Jupiter+B4+Espresso+Andromeda
+%% 展示Google全球网络架构的四个核心组件
+
+flowchart TB
+    subgraph Global["🌍 Google全球网络"]
+        direction TB
+        
+        subgraph Jupiter["🚀 Jupiter数据中心网络"]
+            J1["Jupiter Cluster 1<br/>513 Tbps容量"]
+            J2["Jupiter Cluster 2<br/>513 Tbps容量"]
+            J3["Jupiter Cluster N<br/>..."]
+            JupiterSwitch["Jupiter交换机<br/>大规模Clos架构"]
+        end
+        
+        subgraph B4["🌐 B4全球骨干网"]
+            B4Controller["B4 SDN控制器<br/>OpenFlow+BGP"]
+            B4Edge["B4边缘节点<br/>100+ PoP"]
+            B4Core["B4核心链路<br/>跨洋光纤"]
+        end
+        
+        subgraph Espresso["☕ Espresso边缘网络"]
+            EspressoPoP["Espresso PoP<br/>用户接入点"]
+            EspressoLB["全局负载均衡<br/>Anycast IP"]
+            EspressoCache["边缘缓存<br/>CDN节点"]
+        end
+        
+        subgraph Andromeda["🌌 Andromeda虚拟网络"]
+            AndroControl["Andromeda控制器<br/>VPC管理"]
+            AndroDataPlane["高性能数据面<br/>用户态网络栈"]
+            AndroSecurity["安全组/防火墙<br/>微分段"]
+        end
+    end
+    
+    %% 连接关系
+    Users["👥 全球用户"] --> EspressoPoP
+    EspressoPoP --> EspressoLB --> B4Edge
+    B4Edge --> B4Core --> B4Controller
+    B4Core --> JupiterSwitch
+    JupiterSwitch --> J1 & J2 & J3
+    Jupiter --> AndroDataPlane
+    AndroControl --> AndroDataPlane & AndroSecurity
+    
+    %% 样式定义
+    classDef jupiterStyle fill:#4285F4,stroke:#1967D2,stroke-width:2px,color:#fff
+    classDef b4Style fill:#34A853,stroke:#188038,stroke-width:2px,color:#fff
+    classDef espressoStyle fill:#EA4335,stroke:#B31412,stroke-width:2px,color:#fff
+    classDef andromedaStyle fill:#9C27B0,stroke:#7B1FA2,stroke-width:2px,color:#fff
+    classDef userStyle fill:#FBBC04,stroke:#F9AB00,stroke-width:2px,color:#000
+    classDef globalStyle fill:#F8F9FA,stroke:#DADCE0,stroke-width:2px
+    
+    class J1,J2,J3,JupiterSwitch jupiterStyle
+    class B4Controller,B4Edge,B4Core b4Style
+    class EspressoPoP,EspressoLB,EspressoCache espressoStyle
+    class AndroControl,AndroDataPlane,AndroSecurity andromedaStyle
+    class Users userStyle
+    class Global globalStyle

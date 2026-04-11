@@ -1,0 +1,53 @@
+%% 包喷洒 vs ECMP对比图
+%% 展示两种负载均衡机制的工作流程差异
+
+flowchart TB
+    subgraph "ECMP传统方式"
+        direction TB
+        
+        E1[数据流1<br/>10Gbps] --> H1{流哈希}
+        E2[数据流2<br/>10Gbps] --> H1
+        E3[数据流3<br/>大象流100Gbps] --> H1
+        E4[数据流4<br/>10Gbps] --> H1
+        
+        H1 -->|哈希结果| P1[路径1]
+        H1 -->|哈希结果| P2[路径2]
+        H1 -->|哈希冲突!| P3[路径3<br/>拥塞!]
+        
+        P1 --> D1[目的地]
+        P2 --> D1
+        P3 --> D1
+        
+        style P3 fill:#ffccbc
+        style H1 fill:#fff9c4
+    end
+
+    subgraph "包喷洒方式"
+        direction TB
+        
+        C1[数据流1<br/>信元化] --> S1[喷洒器]
+        C2[数据流2<br/>信元化] --> S1
+        C3[数据流3<br/>大象流<br/>→ 信元] --> S1
+        C4[数据流4<br/>信元化] --> S1
+        
+        S1 -->|均匀喷洒| F1[FN路径1]
+        S1 -->|均匀喷洒| F2[FN路径2]
+        S1 -->|均匀喷洒| F3[FN路径3]
+        S1 -->|均匀喷洒| F4[FN路径4]
+        
+        F1 --> R1[重组器<br/>有序交付]
+        F2 --> R1
+        F3 --> R1
+        F4 --> R1
+        
+        R1 --> D2[目的地]
+        
+        style S1 fill:#b2dfdb
+        style R1 fill:#b2dfdb
+        style F1 fill:#81c784
+        style F2 fill:#81c784
+        style F3 fill:#81c784
+        style F4 fill:#81c784
+    end
+
+    ECMP传统方式 -.->|问题: 哈希冲突导致拥塞| 包喷洒方式

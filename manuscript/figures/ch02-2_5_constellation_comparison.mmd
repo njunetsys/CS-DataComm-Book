@@ -1,0 +1,35 @@
+%% 调制章节 - BPSK/QPSK/16QAM星座图对比
+graph LR
+    subgraph BPSK["BPSK (2点)"]
+        direction TB
+        B1(("-A"))
+        B2(("+A"))
+        B1 --- B2
+    end
+    
+    subgraph QPSK["QPSK (4点)"]
+        direction TB
+        Q1(("+A,+A"))
+        Q2(("-A,+A"))
+        Q3(("-A,-A"))
+        Q4(("+A,-A"))
+        Q1 --- Q3
+        Q2 --- Q4
+    end
+    
+    subgraph QAM16["16-QAM (16点)"]
+        direction TB
+        grid[
+        ○ ○ ○ ○
+        ○ ○ ○ ○
+        ○ ○ ○ ○
+        ○ ○ ○ ○
+        ]
+    end
+    
+    BPSK -.->|"增加1比特"| QPSK
+    QPSK -.->|"增加2比特"| QAM16
+    
+    style BPSK fill:#e8f5e9
+    style QPSK fill:#fff8e1
+    style QAM16 fill:#fce4ec

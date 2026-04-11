@@ -1,0 +1,23 @@
+graph LR
+    subgraph "TCP协议"
+        T1[单路径传输] --> T2[有序交付保证]
+        T2 --> T3[队头阻塞问题<br/>HoL Blocking]
+        T3 --> T4[丢包检测拥塞<br/>反应式]
+        T4 --> T5[单流带宽受限<br/>~5 Gbps]
+        T5 --> T6[高尾延迟<br/>P99.9高]
+    end
+    
+    subgraph "SRD协议"
+        S1[多路径包喷洒<br/>最多64路径] --> S2[无序但可靠交付]
+        S2 --> S3[无队头阻塞]
+        S3 --> S4[主动拥塞控制<br/>预测式]
+        S4 --> S5[单流高带宽<br/>25+ Gbps]
+        S5 --> S6[低尾延迟<br/>P99.9降低85%]
+    end
+    
+    T1 -.->|"演进"| S1
+    
+    style T3 fill:#ffcdd2
+    style T6 fill:#ffcdd2
+    style S3 fill:#c8e6c9
+    style S6 fill:#c8e6c9

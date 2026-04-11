@@ -1,0 +1,104 @@
+%% 图5: 边缘AI模型分割与卸载
+%% 展示边缘计算中的AI模型分割和任务卸载
+
+flowchart TB
+    subgraph Cloud["☁️ 云端数据中心"]
+        direction TB
+        CloudGPU["云端GPU集群
+NVIDIA A100/H100"]
+        CloudModel["完整大模型
+(Transformer)"]
+        CloudTraining["模型训练/微调"]
+    end
+    
+    subgraph EdgeServer["🌐 边缘服务器"]
+        direction TB
+        
+        subgraph ModelSplit["🔀 模型分割策略"]
+            direction LR
+            
+            subgraph SplitEarly["早期分割
+(云端计算多)"]
+                SE1["设备层: 输入/预处理"]
+                SE2["边缘层: 中间特征"]
+                SE3["云层: 深层推理"]
+            end
+            
+            subgraph SplitMiddle["平衡分割
+(分层计算)"]
+                SM1["设备层: 浅层特征"]
+                SM2["边缘层: 中层特征"]
+                SM3["云层: 高层推理"]
+            end
+            
+            subgraph SplitLate["晚期分割
+(边缘计算多)"]
+                SL1["设备层: 数据采集"]
+                SL2["边缘层: 大部分推理"]
+                SL3["云层: 结果聚合"]
+            end
+        end
+        
+        EdgeInference["边缘推理引擎
+TensorRT/ONNX"]
+        ModelCache["模型缓存
+自适应加载"]
+    end
+    
+    subgraph EdgeDevice["📱 边缘设备"]
+        direction TB
+        
+        subgraph Devices["终端设备类型"]
+            D1["智能手机
+NPU/NPU"]
+            D2["智能摄像头
+边缘AI芯片"]
+            D3["自动驾驶车
+车载计算平台"]
+            D4["IoT传感器
+微控制器"]
+        end
+        
+        subgraph OnDeviceAI["端侧AI"]
+            O1["轻量模型
+MobileNet/ EfficientNet"]
+            O2["数据预处理
+量化/压缩"]
+        end
+    end
+    
+    subgraph Network["🌐 网络连接"]
+        N1["5G/WiFi6
+低延迟链路"]
+        N2["动态带宽
+自适应分割"]
+    end
+    
+    %% 连接关系
+    D1 & D2 & D3 & D4 --> O2 --> N1
+    N1 --> EdgeInference --> ModelCache
+    EdgeInference -.分割点.-> CloudModel
+    CloudModel --> CloudGPU
+    
+    N2 -.-> ModelSplit
+    
+    %% 决策流程
+    Decision["🎯 卸载决策引擎"]
+    Decision --> |"延迟敏感"| SplitLate
+    Decision --> |"带宽受限"| SplitEarly
+    Decision --> |"平衡模式"| SplitMiddle
+    
+    %% 样式定义
+    classDef cloudStyle fill:#2196F3,stroke:#1976D2,stroke-width:2px,color:#fff
+    classDef edgeStyle fill:#FF9800,stroke:#F57C00,stroke-width:2px,color:#fff
+    classDef deviceStyle fill:#4CAF50,stroke:#388E3C,stroke-width:2px,color:#fff
+    classDef splitStyle fill:#9C27B0,stroke:#7B1FA2,stroke-width:1px,color:#fff
+    classDef networkStyle fill:#607D8B,stroke:#455A64,stroke-width:2px,color:#fff
+    classDef decisionStyle fill:#E91E63,stroke:#C2185B,stroke-width:2px,color:#fff
+    
+    class CloudGPU,CloudModel,CloudTraining,Cloud cloudStyle
+    class EdgeInference,ModelCache,EdgeServer edgeStyle
+    class D1,D2,D3,D4,O1,O2,Devices,OnDeviceAI,EdgeDevice deviceStyle
+    class SplitEarly,SplitMiddle,SplitLate,SE1,SE2,SE3,SM1,SM2,SM3,SL1,SL2,SL3,ModelSplit splitStyle
+    class N1,N2,Network networkStyle
+    class Decision decisionStyle

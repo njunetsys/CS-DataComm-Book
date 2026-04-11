@@ -1,0 +1,105 @@
+% 图4: PFC帧结构和工作原理图
+\begin{tikzpicture}[scale=0.85, transform shape,
+    box/.style={rectangle, draw, minimum width=2cm, minimum height=0.8cm, align=center, font=\small},
+    frame/.style={rectangle, draw, minimum height=0.6cm, font=\tiny},
+    arrow/.style={->, >=stealth, thick},
+    label/.style={font=\small\bfseries},
+    priority/.style={rectangle, draw, fill=blue!#1, minimum width=0.8cm, minimum height=0.5cm, font=\tiny}
+]
+
+% === 左侧: PFC帧结构 ===
+\node[label] at (-5, 6) {\large \textbf{PFC (Priority Flow Control) 帧结构}};
+
+% 以太网帧头部
+\node[frame, fill=green!20, minimum width=2cm] (eth-dst) at (-9, 4.5) {目的MAC\\01:80:C2:00:00:01};
+\node[frame, fill=green!20, minimum width=1.5cm] (eth-src) at (-6.5, 4.5) {源MAC};
+\node[frame, fill=yellow!30, minimum width=1cm] (eth-type) at (-4.8, 4.5) {8808};
+
+% MAC Control帧
+\node[frame, fill=blue!20, minimum width=1cm] (opcode) at (-3.5, 4.5) {0001};
+\node[frame, fill=red!20, minimum width=4cm] (pfc-params) at (-0.5, 4.5) {PFC参数 (16字节)};
+\node[frame, fill=gray!20, minimum width=1.5cm] (padding) at (2.5, 4.5) {Padding};
+\node[frame, fill=purple!20, minimum width=1cm] (fcs) at (4.2, 4.5) {FCS};
+
+% PFC参数详解
+\node[label, font=\scriptsize] at (-5, 3.2) {PFC参数字段详解:};
+
+% 8个优先级的PFC状态
+\foreach \i/\c in {0/10, 1/20, 2/30, 3/40, 4/50, 5/60, 6/70, 7/80} {
+    \node[priority=\c] (p\i) at (-8+\i*1, 2.5) {P\i};
+    \node[font=\tiny] at (-8+\i*1, 2) {\ifnum\i=5\textbf{RDMA}\fi};
+}
+
+% Pause时间字段
+\foreach \i in {0,...,7} {
+    \node[rectangle, draw, fill=orange!30, minimum width=0.8cm, minimum height=0.5cm, font=\tiny] at (-8+\i*1, 1.2) {Time};
+}
+
+% 标注
+\node[font=\scriptsize, text width=4cm, align=center] at (-5, 0.2) {
+    每个优先级独立控制\\
+    Time=0: Resume\\
+    Time>0: Pause (单位: 512bit times)
+};
+
+% === 右侧: PFC工作原理 ===
+\node[label] at (5, 6) {\large \textbf{PFC工作原理}};
+
+% 两个交换机
+\node[box, fill=blue!20] (sw-up) at (5, 4.5) {上游交换机\\(发送Pause)};
+\node[box, fill=red!20] (sw-down) at (5, 1.5) {下游交换机\\(接收Pause)};
+
+% 缓冲区示意图
+\node[rectangle, draw, fill=gray!10, minimum width=1.5cm, minimum height=2cm] (buffer) at (8, 2.5) {};
+\draw[dashed] (7.2, 3.5) -- (8.8, 3.5) node[right, font=\tiny] {xOFF阈值};
+\draw[dashed] (7.2, 1.5) -- (8.8, 1.5) node[right, font=\tiny] {xON阈值};
+\draw[dashed] (7.2, 0.8) -- (8.8, 0.8) node[right, font=\tiny] {Headroom};
+\fill[red!30] (7.25, 3.5) rectangle (8.75, 3.8);
+
+% 缓冲区标注
+\node[font=\tiny, rotate=90] at (8, 2.5) {接收缓冲区};
+
+% 数据流
+\draw[arrow, green!60!black] (3, 4.5) -- (sw-up) node[midway, above, font=\tiny] {数据流入};
+\draw[arrow, green!60!black] (sw-up) -- (sw-down) node[midway, right, font=\tiny] {转发};
+\draw[arrow, green!60!black] (sw-down) -- (3, 1.5) node[midway, below, font=\tiny] {数据流出};
+
+% Pause帧流
+\draw[arrow, red!60!black, dashed] (sw-down.west) -- (3, 1.5) -- (3, 4.2) -- (sw-up.west);
+\node[font=\tiny, text=red] at (2.2, 3) {Pause帧};
+
+% 状态标注
+\node[rectangle, draw, fill=red!10, text width=3cm, align=center, font=\scriptsize] at (8, 5) {
+    \textbf{触发条件}\\
+    队列深度 > xOFF\\
+    → 发送Pause帧
+};
+
+\node[rectangle, draw, fill=green!10, text width=3cm, align=center, font=\scriptsize] at (8, 0) {
+    \textbf{恢复条件}\\
+    队列深度 < xON\\
+    → 发送Resume帧
+};
+
+% === 底部: PFC优缺点 ===
+\node[rectangle, draw=blue, fill=blue!5, text width=6cm, align=center, font=\small] at (-4, -2) {
+    \textbf{PFC优势}\\
+    • 实现无损以太网\\
+    • 8个优先级独立控制\\
+    • 兼容现有以太网设备
+};
+
+\node[rectangle, draw=red, fill=red!5, text width=6cm, align=center, font=\small] at (4, -2) {
+    \textbf{PFC问题}\\
+    • Head-of-Line Blocking\\
+    • PFC风暴风险\\
+    • 配置复杂
+};
+
+% 底部总结
+\node[rectangle, draw, fill=gray!10, text width=13cm, align=center, font=\small] at (0, -3.5) {
+    \textbf{核心作用}: PFC是以太网的"紧急刹车"系统，通过链路层流控避免缓冲区溢出导致的丢包，\\
+    为RoCEv2提供无损传输的底层保障。但需注意其head-of-line blocking问题。
+};
+
+\end{tikzpicture}

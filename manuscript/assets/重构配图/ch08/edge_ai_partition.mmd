@@ -1,0 +1,33 @@
+graph TB
+    subgraph "云端 Cloud Side"
+        CM[云端模型<br/>Cloud Model<br/>完整DNN]
+        CL[云端层<br/>Cloud Layers<br/>L10-L20]
+    end
+    
+    subgraph "分割点 Partition Point"
+        PP[中间特征<br/>Intermediate<br/>Feature Maps]
+    end
+    
+    subgraph "边缘 Edge Side"
+        EL[边缘层<br/>Edge Layers<br/>L1-L9]
+        EM[边缘模型<br/>Edge Model<br/>压缩/量化]
+        ED[边缘设备<br/>Edge Device<br/>摄像头/传感器]
+    end
+    
+    subgraph "输入 Input"
+        IMG[原始输入<br/>图像/视频<br/>传感器数据]
+    end
+    
+    IMG --> ED
+    ED --> EM
+    EM --> EL
+    EL -->|"传输中间结果"| PP
+    PP --> CL
+    CL --> CM
+    CM -->|"最终输出"| OUT[推理结果<br/>Classification<br/>Detection]
+    
+    style ED fill:#e1f5fe
+    style EL fill:#e1f5fe
+    style PP fill:#fff3e0
+    style CL fill:#c8e6c9
+    style CM fill:#c8e6c9

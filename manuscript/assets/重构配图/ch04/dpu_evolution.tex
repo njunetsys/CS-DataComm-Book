@@ -1,0 +1,144 @@
+% DPU架构演进图
+% 展示从传统NIC到SmartNIC再到DPU的演进
+
+\documentclass[tikz,border=10pt]{standalone}
+\usepackage{tikz}
+\usepackage{ctex}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, fit, backgrounds}
+
+\begin{document}
+\begin{tikzpicture}[
+    node distance=0.5cm,
+    box/.style={rectangle, draw, minimum width=2cm, minimum height=0.6cm, align=center, font=\scriptsize},
+    stage/.style={rectangle, rounded corners, draw, minimum width=4.5cm, minimum height=5.5cm, align=center},
+    arrow/.style={-{Stealth[length=3mm]}, very thick, >=stealth},
+    label/.style={font=\scriptsize\bfseries}
+]
+
+% 标题
+\node[font=\large\bfseries] at (7.5, 5) {DPU架构演进：从传统NIC到DPU};
+
+% ============ 传统NIC ============
+\begin{scope}[local bounding box=nic]
+\node[stage, fill=gray!15] (nic-box) at (0, 0) {};
+\node[font=\bfseries] at (0, 2.3) {传统NIC};
+
+% 内部组件
+\node[box, fill=gray!30, minimum width=3.5cm] (mac) at (0, 1.2) {MAC控制器};
+\node[box, fill=gray!30, minimum width=3.5cm] (phy) at (0, 0.4) {PHY物理层};
+\node[box, fill=gray!30, minimum width=3.5cm] (dma) at (0, -0.4) {DMA引擎};
+\node[box, fill=gray!30, minimum width=3.5cm] (buffer) at (0, -1.2) {数据缓冲区};
+
+% 主机CPU
+\node[box, fill=blue!15, minimum width=3.5cm, minimum height=0.8cm] (host-cpu) at (0, -2.5) {主机CPU\\处理所有网络任务};
+
+% 连接线
+\draw[->] (mac) -- (phy);
+\draw[->] (phy) -- (dma);
+\draw[->] (dma) -- (buffer);
+\draw[->, thick] (buffer) -- (host-cpu);
+\end{scope}
+
+% ============ SmartNIC ============
+\begin{scope}[local bounding box=smartnic, xshift=5.5cm]
+\node[stage, fill=yellow!15] (smartnic-box) at (0, 0) {};
+\node[font=\bfseries] at (0, 2.3) {SmartNIC};
+
+% 内部组件
+\node[box, fill=gray!30, minimum width=3.5cm] (mac2) at (0, 1.2) {MAC控制器};
+\node[box, fill=orange!25, minimum width=3.5cm] (offload) at (0, 0.4) {硬件加速引擎\\(加密/压缩/校验和)};
+\node[box, fill=green!25, minimum width=3.5cm] (p4) at (0, -0.4) {可编程流水线\\(P4/匹配动作表)};
+\node[box, fill=gray!30, minimum width=3.5cm] (dma2) at (0, -1.2) {DMA引擎};
+
+% 主机CPU
+\node[box, fill=blue!15, minimum width=3.5cm, minimum height=0.8cm] (host-cpu2) at (0, -2.5) {主机CPU\\处理复杂控制逻辑};
+
+% 连接线
+\draw[->] (mac2) -- (offload);
+\draw[->] (offload) -- (p4);
+\draw[->] (p4) -- (dma2);
+\draw[->, thick] (dma2) -- (host-cpu2);
+
+% 新增能力标注
+\node[right=0.1cm of offload, font=\tiny, text width=1.5cm, align=left] {任务\\卸载};
+\node[right=0.1cm of p4, font=\tiny, text width=1.5cm, align=left] {可编程\\流水线};
+\end{scope}
+
+% ============ DPU ============
+\begin{scope}[local bounding box=dpu, xshift=11cm]
+\node[stage, fill=green!15] (dpu-box) at (0, 0) {};
+\node[font=\bfseries] at (0, 2.3) {DPU};
+
+% 内部组件
+\node[box, fill=gray!30, minimum width=3.5cm] (mac3) at (0, 1.2) {MAC控制器 (400Gbps+)};
+\node[box, fill=orange!25, minimum width=3.5cm] (hw-acc) at (0, 0.6) {硬件加速引擎集群};
+\node[box, fill=purple!25, minimum width=3.5cm] (arm) at (0, 0) {ARM多核处理器\\(8-16核)};
+\node[box, fill=cyan!25, minimum width=3.5cm] (os) at (0, -0.6) {独立操作系统\\(Linux/RTOS)};
+\node[box, fill=red!25, minimum width=3.5cm] (security) at (0, -1.2) {硬件信任根\\(安全隔离)};
+
+% 主机CPU
+\node[box, fill=blue!15, minimum width=3.5cm, minimum height=0.8cm] (host-cpu3) at (0, -2.5) {主机CPU\\100\%业务负载};
+
+% 连接线
+\draw[->] (mac3) -- (hw-acc);
+\draw[->] (hw-acc) -- (arm);
+\draw[->] (arm) -- (os);
+\draw[->] (os) -- (security);
+\draw[->, thick] (security) -- (host-cpu3);
+
+% 新增能力标注
+\node[right=0.1cm of arm, font=\tiny, text width=1.5cm, align=left] {独立\\计算};
+\node[right=0.1cm of os, font=\tiny, text width=1.5cm, align=left] {完整\\协议栈};
+\node[right=0.1cm of security, font=\tiny, text width=1.5cm, align=left] {零信任\\安全};
+\end{scope}
+
+% ============ 演进箭头 ============
+\draw[arrow] (4, 0) -- (3.5, 0) node[midway, above, font=\small] {功能增强};
+\draw[arrow] (9.5, 0) -- (9, 0) node[midway, above, font=\small] {架构解耦};
+
+% ============ 关键特性对比 ============
+\node[below=0.5cm of nic-box, font=\scriptsize, text width=4cm, align=left] {
+    \textbf{关键特性：}\\
+    $\bullet$ 固定功能ASIC\\
+    $\bullet$ 仅数据链路层\\
+    $\bullet$ 依赖主机CPU
+};
+
+\node[below=0.5cm of smartnic-box, font=\scriptsize, text width=4cm, align=left] {
+    \textbf{关键特性：}\\
+    $\bullet$ 硬件任务卸载\\
+    $\bullet$ P4可编程\\
+    $\bullet$ 部分控制卸载
+};
+
+\node[below=0.5cm of dpu-box, font=\scriptsize, text width=4cm, align=left] {
+    \textbf{关键特性：}\\
+    $\bullet$ 完整计算能力\\
+    $\bullet$ 基础设施隔离\\
+    $\bullet$ 三支柱架构
+};
+
+% ============ 时间线 ============
+\node[below=3cm of nic-box, font=\scriptsize] {1990s-2010s};
+\node[below=3cm of smartnic-box, font=\scriptsize] {2015-2020};
+\node[below=3cm of dpu-box, font=\scriptsize] {2020+};
+
+% ============ 代表产品 ============
+\node[below=3.5cm of nic-box, font=\tiny, text width=4cm, align=center] {
+    Intel 82599\\
+    Mellanox ConnectX-3
+};
+
+\node[below=3.5cm of smartnic-box, font=\tiny, text width=4cm, align=center] {
+    Mellanox BlueField-1\\
+    Intel FPGA NIC
+};
+
+\node[below=3.5cm of dpu-box, font=\tiny, text width=4cm, align=center] {
+    NVIDIA BlueField-3\\
+    Intel IPU\\
+    AMD Pensando
+};
+
+\end{tikzpicture}
+\end{document}

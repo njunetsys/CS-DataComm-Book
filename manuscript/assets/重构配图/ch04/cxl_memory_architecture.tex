@@ -1,0 +1,141 @@
+% CXL内存扩展架构图
+% 展示Type 1/2/3设备类型和CXL拓扑
+
+\documentclass[tikz,border=10pt]{standalone}
+\usepackage{tikz}
+\usepackage{ctex}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, fit, backgrounds, decorations.pathreplacing}
+
+\begin{document}
+\begin{tikzpicture}[
+    node distance=0.4cm,
+    box/.style={rectangle, rounded corners, draw, minimum width=2.5cm, minimum height=0.8cm, align=center, font=\scriptsize},
+    cpu/.style={box, fill=blue!20},
+    device/.style={box, fill=green!20},
+    switch/.style={box, fill=yellow!20, minimum width=1.5cm},
+    memory/.style={cylinder, draw, shape border rotate=90, aspect=0.3, fill=orange!20, minimum width=1.5cm, minimum height=0.8cm, align=center, font=\scriptsize},
+    arrow/.style={-{Stealth[length=2mm]}, thick},
+    label/.style={font=\scriptsize\bfseries}
+]
+
+% 标题
+\node[font=\large\bfseries] at (8, 7) {CXL内存扩展架构};
+
+% ============ 主机CPU ============
+\node[cpu, minimum width=3cm, minimum height=1.2cm] (cpu) at (4, 5) {\textbf{主机CPU}\\CXL Root Complex};
+
+% CXL协议栈
+\node[below=0.3cm of cpu, font=\tiny, text width=3cm, align=center, draw, fill=blue!10, rounded corners] {
+    CXL.io | CXL.cache | CXL.mem
+};
+
+% ============ Type 1 设备 (网卡) ============
+\node[device] (type1) at (0, 2.5) {\textbf{Type 1}\\网卡/NIC};
+\node[below=0.1cm of type1, font=\tiny, text width=2.5cm, align=center] {
+    缓存一致性设备\\CXL.cache + CXL.io
+};
+
+% ============ Type 2 设备 (GPU) ============
+\node[device] (type2) at (4, 2.5) {\textbf{Type 2}\\GPU/加速器};
+\node[memory] (hbm) at (4, 1) {HBM\\显存};
+\node[below=0.1cm of hbm, font=\tiny, text width=2.5cm, align=center] {
+    带内存加速器\\CXL.cache + CXL.mem
+};
+
+% ============ Type 3 设备 (内存扩展) ============
+\node[device] (type3) at (8, 2.5) {\textbf{Type 3}\\内存扩展卡};
+\node[memory] (ddr) at (8, 1) {DDR5\\内存};
+\node[below=0.1cm of ddr, font=\tiny, text width=2.5cm, align=center] {
+    纯内存设备\\CXL.mem + CXL.io
+};
+
+% ============ CXL交换机与内存池化 ============
+\node[switch, minimum width=2cm, minimum height=1cm] (cxl-sw) at (12, 4) {\textbf{CXL}\\\textbf{交换机}};
+
+% 内存池
+\node[memory] (pool1) at (11, 2) {内存池 A};
+\node[memory] (pool2) at (13, 2) {内存池 B};
+\node[below=0.1cm of pool1, font=\tiny] {共享内存};
+\node[below=0.1cm of pool2, font=\tiny] {共享内存};
+
+% ============ 连接线路 ============
+% CPU到设备
+\draw[arrow, blue!50] (cpu) -- (type1) node[midway, left, font=\tiny] {CXL.io};
+\draw[arrow, blue!50] (cpu) -- (type2) node[midway, right, font=\tiny] {CXL.cache};
+\draw[arrow, blue!50] (cpu) -- (type3) node[midway, right, font=\tiny] {CXL.mem};
+
+% GPU到HBM
+\draw[arrow, orange!50] (type2) -- (hbm);
+
+% 内存扩展卡到DDR
+\draw[arrow, orange!50] (type3) -- (ddr);
+
+% CPU到交换机
+\draw[arrow, green!50] (cpu) -- (cxl-sw) node[midway, above, font=\tiny] {CXL Link};
+
+% 交换机到内存池
+\draw[arrow, green!50] (cxl-sw) -- (pool1);
+\draw[arrow, green!50] (cxl-sw) -- (pool2);
+
+% ============ 右侧：CXL 3.0 Fabric拓扑 ============
+\node[font=\bfseries] at (16, 5.5) {CXL 3.0 Fabric拓扑};
+
+% 多级交换
+\node[switch] (sw1) at (15, 4.5) {交换机 L1};
+\node[switch] (sw2) at (17, 4.5) {交换机 L1};
+\node[switch] (sw-root) at (16, 3.5) {根交换机};
+
+\node[cpu, minimum width=1.5cm] (host1) at (14.5, 2.5) {主机1};
+\node[cpu, minimum width=1.5cm] (host2) at (15.5, 2.5) {主机2};
+\node[cpu, minimum width=1.5cm] (host3) at (16.5, 2.5) {主机3};
+\node[cpu, minimum width=1.5cm] (host4) at (17.5, 2.5) {主机4};
+
+\node[memory] (mem1) at (14.5, 1.5) {内存};
+\node[memory] (mem2) at (17.5, 1.5) {内存};
+
+% 连接
+\draw[arrow, gray] (sw1) -- (sw-root);
+\draw[arrow, gray] (sw2) -- (sw-root);
+\draw[arrow, gray] (host1) -- (sw1);
+\draw[arrow, gray] (host2) -- (sw1);
+\draw[arrow, gray] (host3) -- (sw2);
+\draw[arrow, gray] (host4) -- (sw2);
+\draw[arrow, gray] (mem1) -- (host1);
+\draw[arrow, gray] (mem2) -- (host4);
+
+\node[below=0.5cm of host3, font=\tiny, text width=4cm, align=center] {
+    支持最多4096个节点\\全局内存共享
+};
+
+% ============ 协议栈说明 ============
+\node[below=4.5cm of cpu, font=\scriptsize, text width=14cm, align=left, draw, rounded corners, fill=gray!10] {
+    \textbf{CXL协议栈：}\\[3pt]
+    \begin{tabular}{ll}
+    \textcolor{blue!60!black}{CXL.io} & 兼容PCIe协议，用于设备配置、寄存器访问和传统I/O操作 \\
+    \textcolor{green!60!black}{CXL.cache} & 支持设备缓存主机内存，维护缓存一致性（类似CPU缓存一致性协议） \\
+    \textcolor{orange!60!black}{CXL.mem} & 主机直接访问设备内存，使用普通load/store指令 \\
+    \end{tabular}
+};
+
+% ============ 应用场景 ============
+\node[below=6cm of cpu, font=\scriptsize, text width=14cm, align=left, draw, rounded corners, fill=blue!5] {
+    \textbf{典型应用场景：}\\[3pt]
+    \begin{tabular}{lll}
+    \textbf{Type 1} & 智能网卡 & 网卡缓存CPU内存数据，实现零拷贝网络 \\
+    \textbf{Type 2} & AI加速器 & GPU与CPU共享内存空间，消除数据拷贝开销 \\
+    \textbf{Type 3} & 内存扩展 & 突破主板DIMM插槽限制，支持TB级内存扩展 \\
+    \textbf{Fabric} & 内存池化 & 多台服务器共享内存池，动态分配，提高利用率 \\
+    \end{tabular}
+};
+
+% ============ 版本演进 ============
+\node[right=0.5cm of cxl-sw, font=\tiny, text width=3cm, align=left, draw, fill=yellow!10, rounded corners] {
+    \textbf{CXL演进：}\\
+    1.0/1.1: 基础互联\\
+    2.0: 内存池化\\
+    3.0: Fabric能力\\
+    3.1: 点对点通信
+};
+
+\end{tikzpicture}
+\end{document}

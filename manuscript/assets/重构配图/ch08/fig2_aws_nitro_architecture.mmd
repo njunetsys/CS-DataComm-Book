@@ -1,0 +1,70 @@
+%% 图2: AWS Nitro系统架构
+%% 展示AWS Nitro的硬件卸载架构
+
+flowchart TB
+    subgraph HostServer["🖥️ 宿主机服务器"]
+        direction TB
+        
+        subgraph NitroSystem["⚡ AWS Nitro系统"]
+            direction TB
+            
+            subgraph NitroCard["🔧 Nitro卡 (硬件)"]
+                NC1["Nitro Security Chip<br/>根信任+加密"]
+                NC2["Nitro ENA<br/>网络卸载"]
+                NC3["Nitro EBS<br/>存储卸载"]
+                NC4["Nitro Local Storage<br/>本地SSD"]
+            end
+            
+            subgraph NitroHypervisor["💻 Nitro Hypervisor"]
+                NH1["微型Hypervisor<br/>消除虚拟化开销"]
+                NH2["内存管理<br/>硬件辅助"]
+            end
+            
+            subgraph NitroEnclaves["🔒 Nitro Enclaves"]
+                NE1["隔离计算环境<br/>敏感数据处理"]
+                NE2["加密证明<br/>Attestation"]
+            end
+        end
+        
+        subgraph EC2Instances["📦 EC2实例"]
+            E1["m6i/c6i实例<br/>x86虚拟机"]
+            E2["Graviton实例<br/>ARM虚拟机"]
+            E3["裸金属实例<br/>无虚拟化层"]
+        end
+    end
+    
+    subgraph External["🌐 外部服务"]
+        AWSCloud["AWS云服务"]
+        Customer["客户应用"]
+    end
+    
+    %% 连接关系
+    Customer --> E1 & E2 & E3
+    E1 & E2 & E3 --> NH1
+    NH1 --> NC1 & NC2 & NC3 & NC4
+    NC2 --> AWSCloud
+    NC3 --> AWSCloud
+    NE1 -.-> NC1
+    
+    %% 关键特性标注
+    Note1["🔑 关键特性:
+    • 虚拟化开销 < 1%
+    • 硬件安全隔离
+    • 网络/存储全卸载"]
+    
+    Note1 -.-> NitroSystem
+    
+    %% 样式定义
+    classDef nitroCardStyle fill:#FF9900,stroke:#E88A00,stroke-width:2px,color:#000
+    classDef hypervisorStyle fill:#146EB4,stroke:#0D4A7C,stroke-width:2px,color:#fff
+    classDef enclaveStyle fill:#59A449,stroke:#4A8A3C,stroke-width:2px,color:#fff
+    classDef instanceStyle fill:#232F3E,stroke:#161D26,stroke-width:2px,color:#fff
+    classDef externalStyle fill:#F2F8FF,stroke:#CCE0FF,stroke-width:2px,color:#000
+    classDef noteStyle fill:#FFF4E6,stroke:#FFE0B2,stroke-width:1px,color:#000
+    
+    class NC1,NC2,NC3,NC4 nitroCardStyle
+    class NH1,NH2 hypervisorStyle
+    class NE1,NE2 enclaveStyle
+    class E1,E2,E3 instanceStyle
+    class AWSCloud,Customer externalStyle
+    class Note1 noteStyle

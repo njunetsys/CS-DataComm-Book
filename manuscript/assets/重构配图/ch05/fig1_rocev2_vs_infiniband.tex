@@ -1,0 +1,65 @@
+% 图1: RoCEv2 vs InfiniBand协议栈对比图
+\begin{tikzpicture}[scale=0.9, transform shape,
+    box/.style={rectangle, draw, minimum width=3cm, minimum height=0.7cm, align=center, font=\small},
+    arrow/.style={->, >=stealth, thick},
+    label/.style={font=\small\bfseries},
+    note/.style={font=\scriptsize, text width=3cm, align=center},
+    highlight/.style={rectangle, draw=orange, thick, dashed, inner sep=2pt}
+]
+
+% === InfiniBand 协议栈 (左侧) ===
+\node[label] at (-4, 6) {\large \textbf{InfiniBand}};
+\node[note] at (-4, 5.5) {专用高速公路\\私有协议栈};
+
+% IB 协议栈
+\node[box, fill=blue!20] (ib-app) at (-4, 4.5) {应用层 (Verbs)};
+\node[box, fill=blue!30] (ib-trans) at (-4, 3.6) {传输层 (RC/UC/RD)};
+\node[box, fill=blue!40] (ib-network) at (-4, 2.7) {网络层};
+\node[box, fill=blue!50] (ib-link) at (-4, 1.8) {链路层 (LRH/GRH)};
+\node[box, fill=blue!60, text=white] (ib-phys) at (-4, 0.9) {物理层};
+\node[box, fill=gray!40] (ib-hw) at (-4, 0) {IB交换机和网卡};
+
+% 绘制箭头
+\foreach \i/\j in {ib-app/ib-trans, ib-trans/ib-network, ib-network/ib-link, ib-link/ib-phys, ib-phys/ib-hw} {
+    \draw[arrow] (\i) -- (\j);
+}
+
+% IB 特性标注
+\node[note, text=red!70!black] at (-7, 2.5) {• 从零设计\\• 最低延迟\\• 专用硬件\\• 成本高昂};
+
+% === RoCEv2 协议栈 (右侧) ===
+\node[label] at (4, 6) {\large \textbf{RoCEv2}};
+\node[note] at (4, 5.5) {兼容以太网\\利用现有设施};
+
+% RoCEv2 协议栈
+\node[box, fill=green!20] (roce-app) at (4, 4.5) {应用层 (Verbs)};
+\node[box, fill=green!30] (roce-trans) at (4, 3.6) {传输层 (RC/UC/RD)};
+\node[box, fill=yellow!40] (roce-rdma) at (4, 2.7) {RDMA层};
+\node[box, fill=yellow!50] (roce-udp) at (4, 1.8) {UDP (端口4791)};
+\node[box, fill=yellow!60] (roce-ip) at (4, 0.9) {IP层};
+\node[box, fill=orange!50] (roce-eth) at (4, 0) {以太网链路层};
+
+% 绘制箭头
+\foreach \i/\j in {roce-app/roce-trans, roce-trans/roce-rdma, roce-rdma/roce-udp, roce-udp/roce-ip, roce-ip/roce-eth} {
+    \draw[arrow] (\i) -- (\j);
+}
+
+% RoCEv2 特性标注
+\node[note, text=green!60!black] at (7, 2.5) {• 兼容以太网\\• 三层可路由\\• 复用设施\\• 成本效益高};
+
+% === 中间对比区域 ===
+\node[label] at (0, 5.8) {\textbf{vs}};
+
+% 关键差异标注
+\draw[<->, thick, dashed, red!70] (-1.8, 2.5) -- (1.8, 2.5) 
+    node[midway, above, font=\scriptsize, fill=white] {RDMA核心相同};
+\draw[<->, thick, dashed, blue!70] (-1.8, 1) -- (1.8, 1) 
+    node[midway, below, font=\scriptsize, fill=white] {底层差异显著};
+
+% 底部总结
+\node[rectangle, draw, fill=gray!10, text width=10cm, align=center, font=\small] at (0, -1.2) {
+    \textbf{核心洞察}: RoCEv2在保持RDMA零拷贝、内核旁路优势的同时，\\
+    将以太网作为"物理层"，实现了性能与兼容性的平衡
+};
+
+\end{tikzpicture}

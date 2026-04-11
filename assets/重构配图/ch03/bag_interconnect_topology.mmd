@@ -1,0 +1,55 @@
+%% BAG跨区域互联拓扑图
+%% 展示BAG如何连接多个数据中心的L2网络
+
+flowchart TB
+    subgraph "Region A"
+        direction TB
+        subgraph "Building A1"
+            L2A1[L2 DSF/NSF<br/>数千GPU]
+        end
+        subgraph "Building A2"
+            L2A2[L2 DSF/NSF<br/>数千GPU]
+        end
+        
+        BAG_A[BAG Layer<br/>Region A]
+        
+        L2A1 -->|4.5:1超配比| BAG_A
+        L2A2 -->|4.5:1超配比| BAG_A
+    end
+
+    subgraph "Region B"
+        direction TB
+        subgraph "Building B1"
+            L2B1[L2 DSF/NSF<br/>数千GPU]
+        end
+        subgraph "Building B2"
+            L2B2[L2 DSF/NSF<br/>数千GPU]
+        end
+        
+        BAG_B[BAG Layer<br/>Region B]
+        
+        L2B1 -->|4.5:1超配比| BAG_B
+        L2B2 -->|4.5:1超配比| BAG_B
+    end
+
+    subgraph "BAG互联拓扑"
+        direction LR
+        P1[平面1]
+        P2[平面2]
+        P3[平面3]
+        P4[平面4]
+        
+        P1 <-->|16-48 Pbps| P1
+        P2 <-->|16-48 Pbps| P2
+        P3 <-->|16-48 Pbps| P3
+        P4 <-->|16-48 Pbps| P4
+    end
+
+    BAG_A <-->|平面拓扑<br/>分布式拓扑| BAG_B
+    
+    style BAG_A fill:#c8e6c9
+    style BAG_B fill:#c8e6c9
+    style L2A1 fill:#e3f2fd
+    style L2A2 fill:#e3f2fd
+    style L2B1 fill:#e3f2fd
+    style L2B2 fill:#e3f2fd

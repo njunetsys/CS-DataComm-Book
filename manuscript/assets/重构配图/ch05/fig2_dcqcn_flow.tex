@@ -1,0 +1,70 @@
+% 图2: DCQCN拥塞控制流程图（四阶段）
+\begin{tikzpicture}[scale=0.85, transform shape,
+    box/.style={rectangle, draw, rounded corners, minimum width=2.5cm, minimum height=1cm, align=center, font=\small},
+    role/.style={rectangle, draw, thick, minimum width=2cm, minimum height=0.8cm, align=center, font=\small\bfseries},
+    arrow/.style={->, >=stealth, thick},
+    phase/.style={rectangle, draw, fill=blue!10, rounded corners, minimum width=3.5cm, minimum height=5.5cm},
+    phase-title/.style={font=\bfseries\small},
+    packet/.style={rectangle, draw, fill=yellow!30, minimum width=1.8cm, minimum height=0.5cm, font=\tiny}
+]
+
+% === 三个角色定义 ===
+\node[role, fill=red!20] (rp) at (0, 7) {RP\\发送方网卡};
+\node[role, fill=blue!20] (cp) at (5.5, 7) {CP\\交换机};
+\node[role, fill=green!20] (np) at (11, 7) {NP\\接收方网卡};
+
+% === 阶段1: 正常传输 ===
+\node[phase] (p1) at (0, 3.5) {};
+\node[phase-title] at (0, 5.8) {阶段1: 正常传输};
+\node[box, fill=green!10] (rp-send) at (0, 4.8) {全速发送\\数据包};
+\node[box, fill=blue!10] (cp-queue) at (5.5, 4.8) {队列监控\\检测拥塞};
+\node[box, fill=green!10] (np-recv) at (11, 4.8) {正常接收};
+
+% === 阶段2: 拥塞检测 ===
+\node[phase] (p2) at (0, -0.5) {};
+\node[phase-title] at (0, 1.8) {阶段2: 拥塞检测};
+\node[box, fill=blue!20] (cp-ecn) at (5.5, 0.8) {队列深度 > Kmin\\标记ECN=CE};
+\node[note, font=\scriptsize, text width=2.5cm] at (8, 0.8) {RED算法\\概率随队列增长};
+
+% === 阶段3: 拥塞通知 ===
+\node[phase] (p3) at (5.5, -0.5) {};
+\node[phase-title] at (5.5, 1.8) {阶段3: 拥塞通知};
+\node[box, fill=green!20] (np-cnp) at (11, 0.8) {检测ECN=CE\\生成CNP};
+\node[box, fill=orange!20] (cnp-pkt) at (8.2, -0.5) {CNP包\\~64字节\\高优先级};
+\node[note, font=\scriptsize, text width=2.5cm] at (11, -1.5) {包含QP信息\\标识拥塞流};
+
+% === 阶段4: 速率调节 ===
+\node[phase] (p4) at (11, -0.5) {};
+\node[phase-title] at (11, 1.8) {阶段4: 速率调节};
+\node[box, fill=red!20] (rp-decrease) at (11, 0.8) {收到CNP\\执行降速};
+\node[box, fill=red!10] (rp-recovery) at (8.5, -0.5) {快速恢复\\0.5x速率};
+\node[box, fill=red!10] (rp-increase) at (13.5, -0.5) {无CNP时\\渐进加速};
+
+% 绘制阶段之间的数据流
+% 阶段1: RP -> CP -> NP
+\draw[arrow, green!60!black] (rp-send) -- (cp-queue) node[midway, above, font=\tiny] {数据流};
+\draw[arrow, green!60!black] (cp-queue) -- (np-recv) node[midway, above, font=\tiny] {数据流};
+
+% 阶段2: CP标记ECN
+\draw[arrow, blue!60!black] (cp-queue) -- (cp-ecn);
+
+% 阶段3: NP检测并发送CNP
+\draw[arrow, orange!60!black] (np-recv) -- (np-cnp) node[midway, right, font=\tiny] {检测};
+\draw[arrow, orange!80!black, dashed] (np-cnp) -- (cnp-pkt);
+\draw[arrow, orange!80!black, dashed] (cnp-pkt) -- (7, -0.5) -- (7, -2) -- (0, -2) -- (rp-decrease);
+
+% 阶段4: RP调节
+\draw[arrow, red!60!black] (rp-decrease) -- (rp-recovery);
+\draw[arrow, red!60!black] (rp-decrease) -- (rp-increase);
+
+% 循环回到阶段1
+\draw[arrow, gray, dashed] (rp-recovery.south) -- (0, -3) -- (-2, -3) -- (-2, 6) -- (rp-send.west);
+\node[font=\tiny, text=gray] at (-2.5, 3) {降-增循环};
+
+% 底部总结
+\node[rectangle, draw, fill=gray!10, text width=12cm, align=center, font=\small] at (5.5, -4) {
+    \textbf{核心洞察}: DCQCN通过CP→NP→RP的三方协作，将PFC作为"最后一道防线"，\\
+    实现了\textbf{主动拥塞避免}而非被动丢包恢复的端到端拥塞控制
+};
+
+\end{tikzpicture}

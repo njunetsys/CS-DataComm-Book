@@ -1,0 +1,117 @@
+%% 图: SRD多路径传输示意图
+%% 详细展示SRD (Scalable Reliable Datagram) 的多路径传输机制
+
+flowchart TB
+    subgraph Sender["📤 发送端主机"]
+        direction TB
+        
+        subgraph AppLayer["应用层"]
+            App["应用
+(MPI/ML框架)"]
+        end
+        
+        subgraph SRDStack["SRD协议栈"]
+            SRDLib["SRD Library
+用户态网络栈"]
+            
+            subgraph SRDSender["SRD发送引擎"]
+                Segmentation["消息分段
+(固定64KB)"]
+                PathSelect["路径选择器
+(动态负载均衡)"]
+                RetryHandler["重传管理
+(微秒级超时)"]
+            end
+        end
+        
+        subgraph NIC["🚀 ENA Express NIC"]
+            NICQueue["多发送队列
+(每个路径一个)"]
+        end
+    end
+    
+    subgraph Network["🌐 网络层"]
+        direction TB
+        
+        subgraph Path1["路径1"]
+            P1Switch["交换机A"]
+        end
+        
+        subgraph Path2["路径2"]
+            P2Switch["交换机B"]
+        end
+        
+        subgraph Path3["路径3"]
+            P3Switch["交换机C"]
+        end
+        
+        subgraph Path4["路径4"]
+            P4Switch["交换机D"]
+        end
+    end
+    
+    subgraph Receiver["📥 接收端主机"]
+        direction TB
+        
+        subgraph RecvNIC["🚀 ENA Express NIC"]
+            RecvQueue["多接收队列"]
+        end
+        
+        subgraph RecvSRDStack["SRD协议栈"]
+            RecvSRDLib["SRD Library"]
+            
+            subgraph SRDReceiver["SRD接收引擎"]
+                Reassembly["乱序重组
+(滑动窗口)"]
+                DuplicateDetect["重复检测"]
+                Ordering["有序交付"]
+            end
+        end
+        
+        subgraph RecvAppLayer["应用层"]
+            RecvApp["应用"]
+        end
+    end
+    
+    %% 数据流连接
+    App --> SRDLib --> Segmentation --> PathSelect --> RetryHandler --> NICQueue
+    
+    NICQueue --> P1Switch & P2Switch & P3Switch & P4Switch
+    P1Switch & P2Switch & P3Switch & P4Switch --> RecvQueue
+    
+    RecvQueue --> RecvSRDLib --> Reassembly --> DuplicateDetect --> Ordering --> RecvApp
+    
+    %% 关键技术点
+    Tech["💡 SRD关键技术:
+    • 基于DPDK的用户态实现
+    • 多路径并行传输
+    • 微秒级重传 (vs TCP毫秒级)
+    • 无序交付+接收端重组
+    • 绕过内核TCP/IP栈"]
+    
+    Tech -.-> SRDStack
+    Tech -.-> RecvSRDStack
+    
+    %% 性能对比标注
+    Perf["📊 性能提升:
+    • P99延迟降低50%
+    • 吞吐提升5倍
+    • 网络抖动减少80%
+    • 适用于HPC/AI训练"]
+    
+    Perf -.-> Network
+    
+    %% 样式定义
+    classDef appStyle fill:#9C27B0,stroke:#7B1FA2,stroke-width:2px,color:#fff
+    classDef srdStyle fill:#FF6F00,stroke:#E65100,stroke-width:2px,color:#fff
+    classDef nicStyle fill:#0288D1,stroke:#0277BD,stroke-width:2px,color:#fff
+    classDef pathStyle fill:#388E3C,stroke:#2E7D32,stroke-width:1px,color:#fff
+    classDef techStyle fill:#FFF3E0,stroke:#FFCC80,stroke-width:1px,color:#000
+    classDef perfStyle fill:#E8F5E9,stroke:#A5D6A7,stroke-width:1px,color:#000
+    
+    class App,RecvApp,AppLayer,RecvAppLayer appStyle
+    class SRDLib,RecvSRDLib,SRDSender,SRDReceiver,SRDStack,RecvSRDStack,Segmentation,PathSelect,RetryHandler,Reassembly,DuplicateDetect,Ordering srdStyle
+    class NICQueue,RecvQueue,RecvNIC,NIC nicStyle
+    class Path1,Path2,Path3,Path4,P1Switch,P2Switch,P3Switch,P4Switch pathStyle
+    class Tech techStyle
+    class Perf perfStyle

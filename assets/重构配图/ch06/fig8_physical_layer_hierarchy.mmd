@@ -1,0 +1,45 @@
+```mermaid
+%% Scale-Up网络物理层分层设计
+%% 用于第6章 GTC 2024 Scale-Up网络演进
+
+graph LR
+    subgraph "Scale-Up域逻辑视图"
+        direction TB
+        GPU[GPU Pool<br/>576 GPUs]
+    end
+    
+    subgraph "物理层分层实现"
+        direction TB
+        
+        subgraph RackInternal["Rack内部 (铜互联)"]
+            direction LR
+            GPU1[GPU 0-71]
+            GPU2[GPU 72-143]
+            GPU3[GPU ...]
+            GPU8[GPU 504-575]
+            
+            SW1[NVSwitch<br/>L1]
+            
+            GPU1 ---|铜缆<br/>距离<1m| SW1
+            GPU2 ---|铜缆<br/>距离<1m| SW1
+            GPU3 ---|铜缆<br/>距离<1m| SW1
+            GPU8 ---|铜缆<br/>距离<1m| SW1
+        end
+        
+        subgraph RackInterconnect["Rack间互联 (光互联)"]
+            direction LR
+            SW1_L2[NVSwitch L2<br/>Rack 1]
+            SW2_L2[NVSwitch L2<br/>Rack 2]
+            SW8_L2[NVSwitch L2<br/>Rack 8]
+            
+            SW1_L2 ---|光纤<br/>距离1-10m| SW2_L2
+            SW2_L2 ---|光纤<br/>距离1-10m| SW8_L2
+        end
+    end
+    
+    GPU -.逻辑统一.-> RackInternal
+    GPU -.逻辑统一.-> RackInterconnect
+    
+    style RackInternal fill:#c8e6c9
+    style RackInterconnect fill:#ffe0b2
+```

@@ -1,0 +1,110 @@
+% 图3: ECMP vs 包喷洒对比示意图
+\begin{tikzpicture}[scale=0.9, transform shape,
+    box/.style={rectangle, draw, minimum width=1.5cm, minimum height=0.8cm, align=center, font=\small},
+    flow/.style={rectangle, draw, minimum width=0.6cm, minimum height=0.4cm, font=\tiny},
+    arrow/.style={->, >=stealth, thick},
+    label/.style={font=\small\bfseries},
+    link/.style={line width=2pt},
+    conflict/.style={draw=red, line width=3pt, dashed}
+]
+
+% === 左侧: ECMP ===
+\node[label] at (-4, 6) {\large \textbf{ECMP: 基于流的负载均衡}};
+\node[font=\scriptsize, text width=4cm, align=center] at (-4, 5.5) {相同五元组的数据包走同一条路径\\Hash(源IP, 目的IP, 端口, 协议) → 路径};
+
+% 源节点
+\node[box, fill=blue!20] (src1) at (-7, 4) {流A};
+\node[box, fill=blue!20] (src2) at (-4, 4) {流B};
+\node[box, fill=blue!20] (src3) at (-1, 4) {流C};
+
+% 中间交换机
+\node[box, fill=gray!30, minimum width=2cm] (sw-ecmp) at (-4, 2.5) {ECMP交换机\\Hash选路};
+
+% 多条路径
+\draw[link, green!50] (-5.5, 1.5) -- (-5.5, 0.5);
+\draw[link, yellow!50] (-4, 1.5) -- (-4, 0.5);
+\draw[link, orange!50] (-2.5, 1.5) -- (-2.5, 0.5);
+
+% 目标节点
+\node[box, fill=green!20] (dst-ecmp) at (-4, -0.5) {目标};
+
+% ECMP数据流
+\draw[arrow, blue!60] (src1) -- (-6, 3) -- (-5.5, 3) -- (-5.5, 2.5);
+\draw[arrow, blue!60] (src2) -- (-4, 2.5);
+\draw[arrow, blue!60] (src3) -- (-2, 3) -- (-2.5, 3) -- (-2.5, 2.5);
+
+% 显示哈希冲突问题
+\node[conflict, fit={(-5.5, 1.5) (-5.5, 0.5)}, inner sep=0pt] {};
+\node[font=\scriptsize, text=red] at (-6.5, 1) {哈希冲突!};
+\node[font=\tiny, text=red] at (-6.5, 0.6) {流A和流X\\走同一路径};
+
+% 流量标注
+\node[font=\tiny] at (-5.5, 2.2) {80\%负载};
+\node[font=\tiny] at (-4, 2.2) {10\%负载};
+\node[font=\tiny] at (-2.5, 2.2) {10\%负载};
+
+% 问题标注
+\node[rectangle, draw=red, fill=red!10, text width=3.5cm, align=center, font=\scriptsize] at (-4, -2) {
+    \textbf{ECMP问题}\\
+    • 大象流哈希冲突\\
+    • 负载不均严重\\
+    • 链路利用率低\\
+    • AI训练性能下降30\%+
+};
+
+% === 右侧: 包喷洒 ===
+\node[label] at (4, 6) {\large \textbf{包喷洒: 基于包的负载均衡}};
+\node[font=\scriptsize, text width=4cm, align=center] at (4, 5.5) {同一流的不同数据包分散到多条路径\\Round-robin / 随机选择 → 路径};
+
+% 源节点（同一个流被分割）
+\node[box, fill=purple!20, minimum width=3cm] (src-ps) at (4, 4) {大象流 (分解为包)};
+
+% 中间交换机
+\node[box, fill=gray!30, minimum width=2cm] (sw-ps) at (4, 2.5) {包喷洒交换机\\轮询选路};
+
+% 多条路径（均衡负载）
+\draw[link, green!70] (2.5, 1.5) -- (2.5, 0.5);
+\draw[link, green!70] (4, 1.5) -- (4, 0.5);
+\draw[link, green!70] (5.5, 1.5) -- (5.5, 0.5);
+
+% 目标节点 + 重排序缓冲区
+\node[box, fill=purple!20] (dst-ps) at (4, -0.5) {目标 + 重排序};
+
+% 包喷洒数据流（轮询）
+\draw[arrow, purple!60] (3.2, 3.5) -- (2.5, 3.5) -- (2.5, 2.5);
+\draw[arrow, purple!60] (4, 3.5) -- (4, 2.5);
+\draw[arrow, purple!60] (4.8, 3.5) -- (5.5, 3.5) -- (5.5, 2.5);
+
+% 包编号标注
+\node[font=\tiny, fill=yellow!30] at (2.2, 3.5) {Pkt1};
+\node[font=\tiny, fill=yellow!30] at (3.7, 3.5) {Pkt2};
+\node[font=\tiny, fill=yellow!30] at (5.8, 3.5) {Pkt3};
+
+% 均衡负载标注
+\node[font=\tiny, text=green!60!black] at (2.5, 2.2) {33\%负载};
+\node[font=\tiny, text=green!60!black] at (4, 2.2) {33\%负载};
+\node[font=\tiny, text=green!60!black] at (5.5, 2.2) {33\%负载};
+
+% 重排序标注
+\draw[arrow, orange!60, dashed] (2.5, 0.5) -- (2.8, 0);
+\draw[arrow, orange!60, dashed] (4, 0.5) -- (4, 0);
+\draw[arrow, orange!60, dashed] (5.5, 0.5) -- (5.2, 0);
+\node[font=\tiny, text=orange!70!black] at (6.2, 0.2) {乱序到达};
+\node[font=\tiny, text=orange!70!black] at (6.2, -0.3) {硬件重排序};
+
+% 优势标注
+\node[rectangle, draw=green, fill=green!10, text width=3.5cm, align=center, font=\scriptsize] at (4, -2) {
+    \textbf{包喷洒优势}\\
+    • 完美负载均衡\\
+    • 链路利用率高(90\%+)\\
+    • 适应非对称拓扑\\
+    • 智能网卡重排序
+};
+
+% === 底部对比总结 ===
+\node[rectangle, draw, fill=gray!10, text width=14cm, align=center, font=\small] at (0, -4) {
+    \textbf{关键洞察}: AI训练的"低熵"特性（少量大象流）使ECMP哈希冲突成为性能瓶颈。\\
+    包喷洒通过细粒度负载均衡充分利用带宽，配合智能网卡解决乱序问题。
+};
+
+\end{tikzpicture}

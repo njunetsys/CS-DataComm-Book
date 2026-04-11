@@ -1,0 +1,43 @@
+graph TB
+    subgraph "5G核心网 5G Core"
+        AMF[AMF<br/>接入和移动性管理]
+        SMF[SMF<br/>会话管理]
+        UPF[UPF<br/>用户面功能<br/>MEC部署点]
+        NEF[NEF<br/>网络开放功能]
+        PCF[PCF<br/>策略控制]
+    end
+    
+    subgraph "边缘层 MEC Edge"
+        MEC[MEC Host<br/>边缘服务器]
+        MP[MEC Platform<br/>应用管理]
+        MA[MEC Apps<br/>边缘应用]
+        MO[MEC Orchestrator<br/>编排器]
+    end
+    
+    subgraph "无线接入 RAN"
+        UE[用户设备<br/>UE]
+        gNB[gNB<br/>5G基站]
+    end
+    
+    subgraph "数据网络 DN"
+        Cloud[云端服务<br/>Central Cloud]
+        Internet[互联网<br/>Internet]
+    end
+    
+    UE --> gNB
+    gNB --> AMF
+    gNB --> UPF
+    AMF --> SMF
+    SMF --> UPF
+    SMF --> PCF
+    UPF -->|"本地分流"| MEC
+    UPF -->|"远端路由"| Cloud
+    UPF -->|"Internet"| Internet
+    MEC --> MA
+    MP --> MA
+    MO --> MP
+    NEF -->|"开放网络能力"| MEC
+    
+    style UPF fill:#fff3e0
+    style MEC fill:#e1f5fe
+    style MA fill:#c8e6c9

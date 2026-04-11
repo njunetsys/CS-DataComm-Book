@@ -1,0 +1,112 @@
+% 图5: 端到端RDMA数据传输路径图
+\begin{tikzpicture}[scale=0.85, transform shape,
+    box/.style={rectangle, draw, rounded corners, minimum width=2cm, minimum height=0.8cm, align=center, font=\small},
+    mem/.style={rectangle, draw, fill=blue!#1, minimum width=1.5cm, minimum height=0.6cm, font=\tiny},
+    arrow/.style={->, >=stealth, thick},
+    label/.style={font=\small\bfseries},
+    stage/.style={rectangle, draw, fill=gray!#1, minimum width=0.6cm, minimum height=3cm},
+    nocopy/.style={rectangle, draw=red, dashed, thick, inner sep=2pt}
+]
+
+% === 传统TCP/IP vs RDMA对比 ===
+
+% 左侧标题
+\node[label] at (-6, 6) {\large \textbf{传统TCP/IP路径}};
+\node[font=\scriptsize, text=red] at (-6, 5.5) {多次拷贝 · 内核参与 · 高延迟};
+
+% TCP/IP 数据路径
+\node[mem={10}] (tcp-app) at (-9, 4) {应用缓冲区};
+\node[mem={20}] (tcp-user) at (-9, 2.8) {用户空间};
+\node[mem={30}] (tcp-kernel) at (-9, 1.6) {内核缓冲区};
+\node[mem={40}] (tcp-nic) at (-9, 0.4) {网卡缓冲区};
+\node[box, fill=gray!30] (tcp-net) at (-9, -0.8) {网络};
+
+% 拷贝箭头
+\draw[arrow, red!60] (tcp-app) -- (tcp-user) node[midway, right, font=\tiny] {拷贝1};
+\draw[arrow, red!60] (tcp-user) -- (tcp-kernel) node[midway, right, font=\tiny] {拷贝2};
+\draw[arrow, red!60] (tcp-kernel) -- (tcp-nic) node[midway, right, font=\tiny] {拷贝3};
+\draw[arrow, red!60] (tcp-nic) -- (tcp-net);
+
+% CPU参与标注
+\node[rectangle, draw=orange, fill=orange!10, font=\tiny] at (-6.5, 3.4) {CPU参与};
+\node[rectangle, draw=orange, fill=orange!10, font=\tiny] at (-6.5, 2.2) {CPU参与};
+\node[rectangle, draw=orange, fill=orange!10, font=\tiny] at (-6.5, 1) {CPU参与};
+
+% 延迟标注
+\node[font=\scriptsize, text=red] at (-6.5, -1.5) {延迟: 10-100 μs};
+
+% === 中间分隔线 ===
+\draw[dashed, thick, gray] (0, -2) -- (0, 6.5);
+\node[font=\bfseries, text=gray] at (0, 6.8) {vs};
+
+% === 右侧: RDMA路径 ===
+\node[label] at (6, 6) {\large \textbf{RDMA零拷贝路径}};
+\node[font=\scriptsize, text=green!60!black] at (6, 5.5) {零拷贝 · 内核旁路 · 微秒级延迟};
+
+% 发送方
+\node[label, font=\small] at (2.5, 4.5) {发送方};
+\node[mem={20}] (rdma-app-s) at (2.5, 3.5) {应用内存\\(Memory Region)};
+\node[box, fill=green!20] (rdma-rnic-s) at (2.5, 2) {RNIC};
+\node[rectangle, draw, fill=green!10, minimum width=1.5cm, minimum height=0.5cm, font=\tiny] (rdma-sq) at (2.5, 1.2) {发送队列(SQ)};
+\node[rectangle, draw, fill=green!10, minimum width=1.5cm, minimum height=0.5cm, font=\tiny] (rdma-cq-s) at (2.5, 0.6) {完成队列(CQ)};
+
+% 网络
+\node[box, fill=gray!30, minimum width=2cm] (rdma-net) at (6, 2) {RoCEv2网络\\UDP/IP};
+
+% 接收方
+\node[label, font=\small] at (9.5, 4.5) {接收方};
+\node[mem={20}] (rdma-app-r) at (9.5, 3.5) {应用内存\\(Memory Region)};
+\node[box, fill=green!20] (rdma-rnic-r) at (9.5, 2) {RNIC};
+\node[rectangle, draw, fill=green!10, minimum width=1.5cm, minimum height=0.5cm, font=\tiny] (rdma-rq) at (9.5, 1.2) {接收队列(RQ)};
+\node[rectangle, draw, fill=green!10, minimum width=1.5cm, minimum height=0.5cm, font=\tiny] (rdma-cq-r) at (9.5, 0.6) {完成队列(CQ)};
+
+% 绘制RDMA数据流
+% 发送方内部
+\draw[arrow, green!60!black] (rdma-app-s) -- (rdma-rnic-s) node[midway, right, font=\tiny] {直接DMA};
+\draw[arrow, green!60!black] (rdma-rnic-s) -- (rdma-net) node[midway, above, font=\tiny] {数据包};
+\draw[arrow, green!60!black] (rdma-net) -- (rdma-rnic-r) node[midway, above, font=\tiny] {数据包};
+\draw[arrow, green!60!black] (rdma-rnic-r) -- (rdma-app-r) node[midway, right, font=\tiny] {直接DMA};
+
+% 零拷贝标注
+\node[nocopy, fit={(rdma-app-s) (rdma-rnic-s)}] {};
+\node[nocopy, fit={(rdma-app-r) (rdma-rnic-r)}] {};
+\node[font=\tiny, text=red] at (2.5, 4.1) {零拷贝区域};
+\node[font=\tiny, text=red] at (9.5, 4.1) {零拷贝区域};
+
+% 延迟标注
+\node[font=\scriptsize, text=green!60!black] at (6, -0.5) {延迟: 1-2 μs (降低10倍+)};
+
+% === 底部: 三种RDMA操作类型 ===
+\node[label] at (0, -2.5) {\textbf{RDMA三种操作类型}};
+
+% Send/Recv
+\node[rectangle, draw, fill=blue!10, text width=3.5cm, align=center, font=\small] at (-4, -4) {
+    \textbf{Send/Recv}\\
+    传统消息传递\\
+    接收方需预提交缓冲区\\
+    双边操作
+};
+
+% RDMA Write
+\node[rectangle, draw, fill=green!10, text width=3.5cm, align=center, font=\small] at (0, -4) {
+    \textbf{RDMA Write}\\
+    单边写操作\\
+    无需接收方CPU参与\\
+    发送方直接写入
+};
+
+% RDMA Read
+\node[rectangle, draw, fill=orange!10, text width=3.5cm, align=center, font=\small] at (4, -4) {
+    \textbf{RDMA Read}\\
+    单边读操作\\
+    无需接收方CPU参与\\
+    发送方直接读取
+};
+
+% 底部总结
+\node[rectangle, draw, fill=gray!10, text width=14cm, align=center, font=\small] at (0, -5.5) {
+    \textbf{核心突破}: RDMA通过"内核旁路+零拷贝+CPU卸载"三管齐下，将网络延迟从TCP/IP的10-100微秒\\
+    降低到1-2微秒，使GPU能够以内存速度进行跨节点通信。
+};
+
+\end{tikzpicture}

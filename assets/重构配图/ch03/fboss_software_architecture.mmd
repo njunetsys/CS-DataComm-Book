@@ -1,0 +1,66 @@
+%% FBOSS软件架构图
+%% 展示FBOSS的分层架构和关键组件
+
+flowchart TB
+    subgraph "FBOSS软件架构"
+        direction TB
+        
+        subgraph "应用服务层"
+            APP1[BGP路由守护进程]
+            APP2[LLDP邻居发现]
+            APP3[链路状态监控]
+            APP4[Thrift API服务]
+            APP5[状态数据库FSDB]
+        end
+        
+        subgraph "控制平面层"
+            CTRL1[路由管理器]
+            CTRL2[链路管理器]
+            CTRL3[端口管理器]
+            CTRL4[聚合控制器<br/>分布式/集中式混合]
+        end
+        
+        subgraph "适配层"
+            ADAPT1[交换机抽象接口 SAI]
+        end
+        
+        subgraph "驱动层"
+            DRV1[Broadcom SDK]
+            DRV2[Barefoot SDK]
+            DRV3[Mellanox SDK]
+        end
+        
+        subgraph "硬件层"
+            HW1[Wedge 40/100]
+            HW2[Backpack]
+            HW3[Minipack]
+            HW4[其他OCP硬件]
+        end
+    end
+    
+    APP1 <-->|配置/状态| CTRL1
+    APP2 <-->|邻居信息| CTRL2
+    APP3 <-->|端口状态| CTRL3
+    APP4 <-->|API调用| CTRL4
+    APP5 <-->|状态同步| CTRL1
+    APP5 <-->|状态同步| CTRL2
+    
+    CTRL1 -->|路由表| ADAPT1
+    CTRL2 -->|链路状态| ADAPT1
+    CTRL3 -->|端口配置| ADAPT1
+    CTRL4 -->|优化决策| ADAPT1
+    
+    ADAPT1 -->|统一API| DRV1
+    ADAPT1 -->|统一API| DRV2
+    ADAPT1 -->|统一API| DRV3
+    
+    DRV1 --> HW1
+    DRV1 --> HW2
+    DRV2 --> HW3
+    DRV3 --> HW4
+    
+    style 应用服务层 fill:#e3f2fd
+    style 控制平面层 fill:#e8f5e9
+    style 适配层 fill:#fff3e0
+    style 驱动层 fill:#fce4ec
+    style 硬件层 fill:#f3e5f5

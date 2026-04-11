@@ -1,0 +1,121 @@
+%% 图: AWS EFA架构图
+%% 展示AWS Elastic Fabric Adapter的架构和工作原理
+
+flowchart TB
+    subgraph EC2Instance["🖥️ EC2实例"]
+        direction TB
+        
+        subgraph UserSpace["用户态空间"]
+            direction LR
+            
+            subgraph Apps["MPI/NCCL应用"]
+                App1["HPC应用
+(气象模拟/CFD)"]
+                App2["AI训练
+(PyTorch/TensorFlow)"]
+                App3["NCCL集合通信
+(AllReduce)"]
+            end
+            
+            subgraph Libfabric["libfabric库"]
+                LF1["OFI接口
+(Open Fabrics)"]
+                LF2["provider选择
+(EFA provider)"]
+            end
+        end
+        
+        subgraph KernelBypass["内核旁路层"]
+            KB1["EFA内核驱动
+(最小化功能)"]
+            KB2["SCIF协议
+(可扩展通信接口)"]
+        end
+    end
+    
+    subgraph EFADevice["🚀 EFA设备"]
+        direction TB
+        
+        subgraph EFAHW["EFA硬件 (Nitro卡)"]
+            EFAQueuePair["队列对 QP
+发送/接收队列"]
+            EFACM["连接管理
+(Connection Manager)"]
+            EFARDMA["RDMA引擎
+(远程直接内存访问)"]
+        end
+        
+        subgraph EFASoftware["EFA软件栈"]
+            EFASRD["SRD协议实现
+(Scalable Reliable Datagram)"]
+            EFAMultiPath["多路径传输
+(动态路径选择)"]
+        end
+    end
+    
+    subgraph Network["🌐 AWS网络"]
+        direction TB
+        
+        subgraph EFAFabric["EFA网络结构"]
+            Switch1["EFA交换机
+(Clos架构)"]
+            Switch2["EFA交换机"]
+        end
+        
+        PeerEFA["对端EFA设备
+(其他实例)"]
+    end
+    
+    subgraph Comparison["📊 EFA vs 标准ENI"]
+        direction LR
+        
+        Standard["标准ENI:
+• 内核TCP/IP栈
+• ~100μs延迟
+• OS管理网络
+• 适合通用工作负载"]
+        
+        EFA["EFA:
+• 用户态RDMA
+• ~15μs延迟
+• 应用直接访问网卡
+• 适合HPC/ML工作负载"]
+    end
+    
+    %% 连接关系
+    App1 & App2 & App3 --> LF1 --> LF2
+    LF2 --> KB1 --> KB2 --> EFAQueuePair
+    EFAQueuePair --> EFACM & EFARDMA
+    EFARDMA --> EFASRD --> EFAMultiPath
+    EFAMultiPath --> Switch1 --> Switch2 --> PeerEFA
+    
+    %% 关键技术标注
+    KeyTech["🔑 关键技术:
+    • OS-bypass: 应用直接访问网卡
+    • RDMA: 零拷贝远程内存访问
+    • SRD: 可扩展可靠数据报
+    • libfabric: 标准化API"]
+    
+    KeyTech -.-> Libfabric
+    KeyTech -.-> EFASoftware
+    
+    %% 样式定义
+    classDef appStyle fill:#9C27B0,stroke:#7B1FA2,stroke-width:2px,color:#fff
+    classDef libfabricStyle fill:#FF9800,stroke:#F57C00,stroke-width:2px,color:#fff
+    classDef bypassStyle fill:#E91E63,stroke:#C2185B,stroke-width:2px,color:#fff
+    classDef efaStyle fill:#2196F3,stroke:#1976D2,stroke-width:2px,color:#fff
+    classDef networkStyle fill:#4CAF50,stroke:#388E3C,stroke-width:2px,color:#fff
+    classDef compareStyle fill:#F5F5F5,stroke:#E0E0E0,stroke-width:1px,color:#000
+    classDef standardStyle fill:#BDBDBD,stroke:#9E9E9E,stroke-width:1px,color:#000
+    classDef efaCompareStyle fill:#BBDEFB,stroke:#90CAF9,stroke-width:2px,color:#000
+    classDef keyStyle fill:#FFF8E1,stroke:#FFE082,stroke-width:1px,color:#000
+    
+    class App1,App2,App3,Apps appStyle
+    class LF1,LF2,Libfabric libfabricStyle
+    class KB1,KB2,KernelBypass bypassStyle
+    class EFAQueuePair,EFACM,EFARDMA,EFASRD,EFAMultiPath,EFAHW,EFASoftware,EFADevice efaStyle
+    class Switch1,Switch2,EFAFabric,PeerEFA,Network networkStyle
+    class Standard standardStyle
+    class EFA,efaCompareStyle
+    class Comparison compareStyle
+    class KeyTech keyStyle

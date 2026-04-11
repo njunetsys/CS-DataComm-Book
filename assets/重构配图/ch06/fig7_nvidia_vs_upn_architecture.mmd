@@ -1,0 +1,53 @@
+```mermaid
+%% NVIDIA vs 阿里云UPN架构对比
+%% 用于第6章 GTC 2024 Scale-Up网络演进
+
+graph TB
+    subgraph NVIDIA["NVIDIA NVLINK路线: 分层多级扩展"]
+        subgraph Rack1["Rack 1 (NVL72)"]
+            GPU1[GPU 0-8]
+            GPU2[GPU 9-17]
+            GPU3[...]
+            SW1[NVSwitch L1]
+        end
+        
+        subgraph Rack2["Rack 2 (NVL72)"]
+            GPU4[GPU 0-8]
+            GPU5[GPU 9-17]
+            GPU6[...]
+            SW2[NVSwitch L1]
+        end
+        
+        subgraph Rack8["Rack 8 (NVL72)"]
+            GPU22[GPU 0-8]
+            GPU23[GPU 9-17]
+            GPU24[...]
+            SW8[NVSwitch L1]
+        end
+        
+        SW9[NVSwitch L2<br/>跨Rack互联]
+        
+        SW1 --- SW9
+        SW2 --- SW9
+        SW8 --- SW9
+    end
+    
+    subgraph UPN["阿里云UPN路线: 单层大域交换"]
+        subgraph Domain["统一交换域"]
+            Node1[计算节点 1]
+            Node2[计算节点 2]
+            Node3[...]
+            NodeN[计算节点 N]
+        end
+        
+        SW_UPN[单层高Radix交换机<br/>512/576/1152端口]
+        
+        Node1 --- SW_UPN
+        Node2 --- SW_UPN
+        Node3 --- SW_UPN
+        NodeN --- SW_UPN
+    end
+    
+    style NVIDIA fill:#e1f5ff
+    style UPN fill:#fff3e0
+```

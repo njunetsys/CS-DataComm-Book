@@ -1,0 +1,109 @@
+%% 图: 三大云厂商网络架构对比
+%% 对比AWS、Azure、GCP的网络架构特点
+
+flowchart TB
+    subgraph Comparison["☁️ 三大云厂商网络架构对比"]
+        direction TB
+        
+        subgraph AWS["🔶 AWS (Amazon)"]
+            direction TB
+            AWSGlobal["AWS Global Network
+100+ PoP, 25+ Regions"]
+            
+            subgraph AWSServices["核心网络服务"]
+                AWSTransit["Transit Gateway
+集中式路由"]
+                AWSDirectConnect["Direct Connect
+专线接入"]
+                AWSAppMesh["App Mesh
+服务网格"]
+                AWSCloudFront["CloudFront
+CDN加速"]
+            end
+            
+            AWSNitro["Nitro系统
+硬件虚拟化卸载"]
+        end
+        
+        subgraph Azure["🔷 Azure (Microsoft)"]
+            direction TB
+            AzureGlobal["Azure Global Network
+60+ Regions, 170+ PoP"]
+            
+            subgraph AzureServices["核心网络服务"]
+                AzureVNet["Virtual Network
+租户隔离网络"]
+                AzureExpressRoute["ExpressRoute
+专线接入"]
+                AzureFrontDoor["Front Door
+全球负载均衡"]
+                AzureWAN["Virtual WAN
+企业分支互联"]
+            end
+            
+            AzureSmartNIC["SmartNIC
+FPGA加速"]
+        end
+        
+        subgraph GCP["🟢 GCP (Google)"]
+            direction TB
+            GCPGlobal["Google Global VPC
+私有骨干网 (B4)"]
+            
+            subgraph GCPServices["核心网络服务"]
+                GCPVPC["VPC Network
+全球任意播"]
+                GCPInterconnect["Cloud Interconnect
+专线+合作伙伴"]
+                GCPCDN["Cloud CDN
+边缘缓存"]
+                GCPLoadBalancer["Global LB
+任播自动故障转移"]
+            end
+            
+            GCPAndromeda["Andromeda
+软件定义网络"]
+        end
+    end
+    
+    subgraph Features["🎯 架构特点对比"]
+        direction LR
+        
+        F1["AWS:
+• 最早成熟
+• 服务丰富
+• 企业级安全
+• Nitro硬件加速"]
+        
+        F2["Azure:
+• 混合云优势
+• 企业集成
+• SD-WAN
+• 微软生态"]
+        
+        F3["GCP:
+• 全球负载均衡
+• SDN领先
+• 开源友好
+• AI/ML优化"]
+    end
+    
+    %% 连接关系
+    AWSGlobal --> AWSServices --> AWSNitro
+    AzureGlobal --> AzureServices --> AzureSmartNIC
+    GCPGlobal --> GCPServices --> GCPAndromeda
+    
+    %% 样式定义
+    classDef awsStyle fill:#FF9900,stroke:#E88A00,stroke-width:2px,color:#000
+    classDef azureStyle fill:#0078D4,stroke:#106EBE,stroke-width:2px,color:#fff
+    classDef gcpStyle fill:#4285F4,stroke:#1967D2,stroke-width:2px,color:#fff
+    classDef featureStyle fill:#F5F5F5,stroke:#E0E0E0,stroke-width:1px,color:#000
+    classDef titleStyle fill:#263238,stroke:#37474F,stroke-width:2px,color:#fff
+    
+    class AWS,AWSGlobal,AWSServices,AWSNitro,AWSTransit,AWSDirectConnect,AWSAppMesh,AWSCloudFront awsStyle
+    class Azure,AzureGlobal,AzureServices,AzureSmartNIC,AzureVNet,AzureExpressRoute,AzureFrontDoor,AzureWAN azureStyle
+    class GCP,GCPGlobal,GCPServices,GCPAndromeda,GCPVPC,GCPInterconnect,GCPCDN,GCPLoadBalancer gcpStyle
+    class F1 awsStyle
+    class F2 azureStyle
+    class F3 gcpStyle
+    class Features,Comparison featureStyle

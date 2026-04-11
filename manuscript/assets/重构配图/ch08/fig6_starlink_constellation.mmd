@@ -1,0 +1,111 @@
+%% 图6: 卫星互联网星座图
+%% 展示Starlink等LEO卫星互联网星座架构
+
+flowchart TB
+    subgraph Space["🌌 太空段"]
+        direction TB
+        
+        subgraph OrbitShells["轨道壳层 (多层星座)"]
+            direction TB
+            
+            Shell1["壳层1: 550km
+1584颗卫星
+53°倾角"]
+            
+            Shell2["壳层2: 540km
+1584颗卫星
+53.2°倾角"]
+            
+            Shell3["壳层3: 570km
+720颗卫星
+70°倾角"]
+            
+            Shell4["壳层4: 560km
+348颗卫星
+97.6°倾角"]
+        end
+        
+        subgraph SatTypes["卫星类型"]
+            direction LR
+            SatV1["V1.0卫星
+260kg
+ Ku波段"]
+            SatV15["V1.5卫星
+295kg
++激光链路"]
+            SatV2["V2.0卫星
+1250kg
++星间链路"]
+            SatV2Mini["V2 Mini
+800kg
+Starship发射"]
+        end
+        
+        ISL["🔴 星间激光链路
+(Laser ISL)
+光学通信"]
+    end
+    
+    subgraph Ground["🌍 地面段"]
+        direction TB
+        
+        subgraph Gateways["信关站 (Gateways)"]
+            G1["地球站
+大型抛物面天线"]
+            G2["数据中心接入
+光纤骨干网"]
+        end
+        
+        subgraph UserTerminals["用户终端"]
+            U1["相控阵天线
+(电子束成形)"]
+            U2["用户设备
+路由器/调制解调器"]
+        end
+        
+        NOC["网络运营中心
+(NOC)"]
+    end
+    
+    subgraph Connectivity["🔗 连接示意"]
+        direction LR
+        C1["卫星→用户
+(用户波束)"]
+        C2["卫星→信关站
+(馈电波束)"]
+        C3["卫星↔卫星
+(激光ISL)"]
+    end
+    
+    %% 连接关系
+    Shell1 & Shell2 & Shell3 & Shell4 -.-> SatV1 & SatV15 & SatV2 & SatV2Mini
+    SatV1 & SatV15 & SatV2 & SatV2Mini -.-> ISL
+    
+    SatV1 & SatV15 & SatV2 & SatV2Mini -.-> G1
+    G1 --> G2 --> NOC
+    SatV1 & SatV15 & SatV2 & SatV2Mini -.-> U1 --> U2
+    
+    %% 覆盖示意
+    Coverage["🛰️ 覆盖模式:
+    • 波束成形: 可转向点波束
+    • 频率复用: 4色复用
+    • 动态功率: 按需分配"]
+    
+    %% 样式定义
+    classDef shellStyle fill:#1A237E,stroke:#0D47A1,stroke-width:2px,color:#fff
+    classDef satStyle fill:#3949AB,stroke:#283593,stroke-width:1px,color:#fff
+    classDef islStyle fill:#E91E63,stroke:#C2185B,stroke-width:2px,color:#fff
+    classDef gatewayStyle fill:#FF6F00,stroke:#E65100,stroke-width:2px,color:#fff
+    classDef userStyle fill:#00BCD4,stroke:#0097A7,stroke-width:2px,color:#fff
+    classDef nocStyle fill:#4CAF50,stroke:#388E3C,stroke-width:2px,color:#fff
+    classDef connStyle fill:#F3E5F5,stroke:#CE93D8,stroke-width:1px,color:#000
+    classDef coverageStyle fill:#FFF3E0,stroke:#FFCC80,stroke-width:1px,color:#000
+    
+    class Shell1,Shell2,Shell3,Shell4,OrbitShells shellStyle
+    class SatV1,SatV15,SatV2,SatV2Mini,SatTypes satStyle
+    class ISL islStyle
+    class G1,G2,Gateways gatewayStyle
+    class U1,U2,UserTerminals userStyle
+    class NOC nocStyle
+    class C1,C2,C3,Connectivity connStyle
+    class Coverage coverageStyle

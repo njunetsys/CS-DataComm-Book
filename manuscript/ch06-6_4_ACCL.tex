@@ -1,0 +1,146 @@
+\section{ACCL：面向大规模AI集群的集合通信库}
+
+在分布式深度学习训练中，集合通信（Collective Communication）是连接各个计算节点的桥梁。All-Reduce、All-Gather、Broadcast等集合通信操作，决定了多机多卡训练的效率上限。本节将介绍阿里云自研的高性能集合通信库ACCL（Alibaba Collective Communications Library），揭示其如何通过创新的算法设计和拓扑感知优化，在大规模AI集群上实现接近线性的性能扩展。
+
+\subsection{为什么需要ACCL}
+
+随着AI和深度学习的快速发展，模型越来越复杂，训练数据集越来越大。完成一个训练周期可能需要几天甚至几个月的时间。为了减少训练时间，采用多机多GPU的分布式机器学习集群成为普遍选择。而分布式集群的性能很大程度上依赖于节点间的通信能力。
+
+\subsubsection{现有通信库的局限性}
+
+目前业界常用的集合通信库主要有NVIDIA的NCCL、Facebook的GLOO以及MPI的实现。然而，这些通信库在大规模AI集群场景下都存在局限性：
+
+\textbf{GLOO和MPI}：无法充分利用大规模集群的多网卡特性和高带宽，使得网络传输成为性能的瓶颈。
+
+\textbf{NCCL}：算法比较单一，主要采用Ring（环形）算法，虽然在2.4版本以后增加了Double Binary Tree算法，但在大规模GPU场景存在天然劣势。Ring算法的步数与GPU数量成正比（$O(N)$），当集群规模达到数百甚至上千个GPU时，通信延迟会显著增加。
+
+\subsubsection{大规模多网卡架构的挑战}
+
+阿里云EFlops集群采用多网卡互联架构，每台主机配备多张100Gb网卡。这种架构的好处是成倍增加主机间的物理带宽，使得多机多卡之间的高速通信成为可能。但也带来了明显的问题：大流量多flow下的网络拥塞造成的网络吞吐下降甚至丢包。
+
+如何充分利用多网卡架构的高带宽，以及避免大流量下的网络拥塞，成为性能能否线性扩展的关键。这正是ACCL要解决的核心问题。
+
+\subsection{ACCL的设计与框架}
+
+ACCL的设计目标是面向大规模多网卡AI集群提供最优的集合通信能力，从而保证业务性能在大规模环境下也能实现接近线性的扩展。
+
+\subsubsection{框架兼容性}
+
+ACCL计划支持各种常用的深度学习框架和平台，目前已经实现了对Horovod的支持，后续会支持更多其他框架。
+
+\textbf{NCCL兼容}：考虑到初期ACCL的功能并不完善，不少的集合通信功能还在陆续实现当中，ACCL内部也实现了NCCL的兼容。这意味着用户可以在不修改代码的情况下，先使用NCCL的功能，再逐步迁移到ACCL的优化实现。
+
+\subsubsection{底层传输机制}
+
+在底层数据传输方面，ACCL充分利用RDMA的低延迟和高吞吐率特性：
+\begin{itemize}
+    \item \textbf{结点间通信}：通过RDMA / GPU Direct（GDR）进行传输
+    \item \textbf{结点内通信}：支持PCIe/NVLink等各种互联方式
+\end{itemize}
+
+ACCL支持两种RDMA通信模式：
+\begin{enumerate}
+    \item \textbf{User Event模式}：使用epoll的方式处理发送与接收请求。这种模式可以降低CPU的使用率，但会提高小包的延迟。
+    \item \textbf{Busy Wait模式}：采用polling的方式处理发送接收请求。这种模式可以更加及时地处理事件，大幅降低小包的latency，但会提高CPU的使用率。
+\end{enumerate}
+
+对于活动连接数较少、小包较多的情况，使用Busy Wait会有性能提升。ACCL还支持混合模式：在发送之后使用poll固定次数，可以缓解小包延时较大的问题。
+
+\subsection{EFlops集群架构}
+
+ACCL的设计深度结合了EFlops集群的硬件架构。让我们了解两种典型的EFlops集群配置：
+
+\subsubsection{EFlops V0架构}
+
+EFlops V0是一期64卡测试集群的系统架构：
+\begin{itemize}
+    \item 16台主机，每台主机4张GPU和配套的网卡
+    \item 主机根据不同的DSCP设置分为两组
+    \item 每个组里的任何主机跟另外组的所有主机之间都有一条直连的网络链路用于数据传输
+    \item 主机内GPU之间通过PCIe互联
+\end{itemize}
+
+\subsubsection{EFlops V1架构}
+
+EFlops V1是针对阿里云现有集群架构进行改进的多网卡互联架构：
+\begin{itemize}
+    \item 每台主机采用4张100Gb的网卡，8个GPU
+    \item 节点内采用更快的NVLink互联方式
+    \item 通过NVLink的高速带宽，实现节点内GPU之间的高效通信
+\end{itemize}
+
+这种架构设计使得ACCL可以充分利用多网卡的物理带宽，同时通过拓扑感知算法避免网络拥塞。
+
+\subsection{Rank重排算法：拓扑感知的无拥塞通信}
+
+集合通信的性能很大程度上依赖于数据传输的快慢。网络传输的快慢除了依赖于网络硬件的性能外，跟具体的算法实现也是紧密相关的。ACCL的核心创新在于通过拓扑感知和Rank重排，实现了无拥塞的All-Reduce/All-Gather算法。
+
+\subsubsection{Ring vs Halving Doubling算法}
+
+目前流行的集合通信算法主要有两种：
+
+\textbf{Ring算法}：业界领先的NCCL主要采用这种算法。Ring算法的特点是步数多（$O(N)$），但每一步需要传输的数据量少，而且采用单向环式的网络传输，可以有效降低网络拥塞的可能性。
+
+\textbf{Halving Doubling（HD）算法}：通过递增和二分的方式快速实现数据传输。HD算法的步数少（$O(\log N)$），但每一步要传输的数据量大。
+
+在大规模计算中，HD算法的步数优势应该更加明显。然而在实际测试中，阿里云发现标准的HD算法在传输小量数据时确实能达到非常好的性能，但对于大量数据，因为多个进程同时传输造成的incast问题，网络容易形成拥塞，性能反而不如NCCL的Ring实现。
+
+\subsubsection{Rank重排算法的核心思想}
+
+ACCL在HD算法的基础上，通过拓扑感知和Rank重排，实现了无拥塞的All-Reduce/All-Gather算法。算法的核心是根据每个进程的物理位置，重新排列该进程对应的rank，结合节点之间的同步策略，使得任何时刻任何点到点的数据传输都能独占一条物理链路。
+
+具体来说：
+\begin{enumerate}
+    \item \textbf{物理拓扑识别}：ACCL自动识别集群的物理拓扑，包括主机间的网络连接、网卡与GPU的对应关系
+    \item \textbf{GPU和网卡匹配}：通过计算PCIe设备之间的距离，自动绑定跟GPU设备最近的网卡，实现GPU和网卡的自动匹配
+    \item \textbf{Rank重排}：根据物理拓扑，重新排列进程的rank值，使得通信时数据路径最短且没有冲突
+    \item \textbf{同步策略}：通过精心设计的同步机制，确保同一时刻同一网卡只传输一个数据流
+\end{enumerate}
+
+以EFlops V0的32卡架构为例，经过Rank重排后，算法的任何一个步骤，同一个主机的四张网卡，走的都是不同的直连链路。这样就保证了数据经过的路径最短，而且网卡间的数据路径没有冲突。
+
+对于EFlops V1架构，考虑到节点内采用了NVLink的高速互联，ACCL对算法进行了改进，采用分段式的通信方式：先进行主机内的通信，然后主机间再通过上述算法进行Rank重排和路由选择。
+
+\subsection{ACCL性能评估}
+
+阿里云在两种不同的EFlops环境上做了ACCL和NCCL的性能对比测试。
+
+\subsubsection{EFlops V0环境测试}
+
+在4×16=64张GPU卡的V0环境中，测试了32卡和64卡两种情况下跟NCCL的All-Reduce耗时对比：
+
+\textbf{测试配置}：
+\begin{itemize}
+    \item NCCL（P2P+LL）：NCCL加上P2P和小包优化后的结果
+    \item NCCL\_NetOnly：NCCL只使用RDMA做数据传输的结果（无P2P和LL优化）
+    \item ACCL：使用ACCL的EFlops算法
+\end{itemize}
+
+\textbf{测试结果}：
+\begin{itemize}
+    \item 从算法层面看，在EFlops环境中，ACCL的EFlops算法比Ring的优势比较明显，尤其是小包的情况下
+    \item 在32卡或者64卡的情况下，ACCL比NCCL的结果至少有平均20\%的提升
+    \item 64卡的性能差异比32卡要大，随着GPU卡数的增加，ACCL相比NCCL的性能优势会越来越明显
+\end{itemize}
+
+\subsubsection{扩展性测试}
+
+阿里云还对ACCL本身做了纵向对比，以4×8作为基准，比较同样大小的数据时，4×16相对4×8的耗时比例。测试结果显示：当数据量比较大的时候（如超过4MB），4×16和4×8的耗时区别很小，性能基本呈线性扩展。
+
+\subsubsection{EFlops V1大规模测试}
+
+在64台主机的512卡V1环境中，规模比64卡有好几倍的增加。测试结果显示：随着GPU卡数的增加，ACCL相比NCCL对通信的性能提升也越明显，最大有6倍左右的差异。
+
+\subsection{本节小结}
+
+ACCL作为阿里云自研的高性能集合通信库，通过以下创新实现了大规模AI集群上的高效通信：
+
+\textbf{多网卡优化}：自动识别物理拓扑，实现GPU和网卡的最佳匹配，充分利用多网卡的物理带宽。
+
+\textbf{拓扑感知算法}：通过Rank重排算法，避免网络拥塞，实现无拥塞的All-Reduce/All-Gather通信。
+
+\textbf{框架兼容}：支持Horovod等主流深度学习框架，同时兼容NCCL API，便于用户迁移。
+
+\textbf{性能优势}：在大规模GPU集群（512卡）上，相比NCCL有最高6倍的性能提升，且随着规模增加优势更加明显。
+
+ACCL的成功实践证明，在大规模AI集群中，通信库的算法优化与硬件拓扑的紧密结合，是提升分布式训练效率的关键。随着AI模型规模的持续增长，这种软硬件协同优化的思路将变得越来越重要。

@@ -1,0 +1,64 @@
+```mermaid
+flowchart TB
+    subgraph Sender["Sender Nitro Card"]
+        App["Application"]
+        Buffer["Packet Buffer"]
+        PathSelector["Dynamic Path Selector"]
+        RateLimiter["Rate Limiter"]
+        
+        subgraph Paths["Available Paths"]
+            P1["Path 1<br/>RTT: 50μs"]
+            P2["Path 2<br/>RTT: 45μs"]
+            P3["Path 3<br/>RTT: 55μs"]
+            P4["Path N<br/>RTT: ..."]
+        end
+    end
+    
+    subgraph Network["AWS Network Fabric"]
+        S1["Spine 1"]
+        S2["Spine 2"]
+        S3["Spine N"]
+    end
+    
+    subgraph Receiver["Receiver Nitro Card"]
+        Reorder["Reordering Buffer"]
+        ACK["ACK Generator"]
+        Feedback["Feedback Engine"]
+        AppRcv["Application"]
+    end
+    
+    App -->|"Message"| Buffer
+    Buffer --> PathSelector
+    PathSelector -->|"Monitor RTT"| Paths
+    PathSelector -->|"Spray packets"| P1
+    PathSelector -->|"Spray packets"| P2
+    PathSelector -->|"Spray packets"| P3
+    PathSelector -->|"Spray packets"| P4
+    
+    RateLimiter -->|"Control rate"| PathSelector
+    
+    P1 --> S1
+    P2 --> S2
+    P3 --> S3
+    P4 --> S1
+    
+    S1 -->|"Out-of-order<br/>packets"| Reorder
+    S2 --> Reorder
+    S3 --> Reorder
+    
+    Reorder -->|"In-order<br/>delivery"| AppRcv
+    Reorder --> ACK
+    ACK -->|"ACK + RTT info"| Feedback
+    Feedback -->|"Congestion signal"| RateLimiter
+    Feedback -->|"Path quality"| PathSelector
+    
+    classDef sender fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef network fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef receiver fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef critical fill:#ffebee,stroke:#c62828,stroke-width:3px
+    
+    class App,Buffer,PathSelector,RateLimiter,Paths sender
+    class S1,S2,S3 network
+    class Reorder,ACK,Feedback,AppRcv receiver
+    class PathSelector,RateLimiter critical
+```

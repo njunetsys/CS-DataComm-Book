@@ -1,0 +1,90 @@
+% 信号处理应用 - 单独编译版本
+% 使用: xelatex ch02-2_3_1_standalone.tex
+
+\documentclass[12pt,a4paper]{article}
+
+% 中文支持
+\usepackage[UTF8]{ctex}
+
+% 页面设置
+\usepackage{geometry}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+
+% 数学支持
+\usepackage{amsmath,amssymb,amsfonts}
+
+% 图片支持
+\usepackage{graphicx}
+\graphicspath{{../assets/ch02/}}
+
+% 表格支持
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+
+% 代码高亮
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\small}
+
+% 超链接
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+
+% 标题格式
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+% 行距
+\usepackage{setspace}
+\onehalfspacing
+
+% 页眉页脚
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{信号处理的应用场景与方法体系}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% 自定义 mmd 环境（用于 Mermaid 图表）
+\usepackage{tikz}
+\usepackage{float}
+
+% 定义 mmd 环境
+\newenvironment{mmd}[1]{%
+    \begin{figure}[H]%
+    \centering%
+    \begin{minipage}{#1}%
+    \small%
+}{%
+    \end{minipage}%
+    \end{figure}%
+}
+
+% 为了让原文件的 \subsection 和 \subsubsection 能正常工作，我们做一下映射
+% 原文件使用 \subsection{信号处理的应用场景与方法体系} 作为标题
+% 我们把它映射到 \section
+\let\originalsubsection\subsection
+\let\originalsubsubsection\subsubsection
+\renewcommand{\subsection}[1]{\section{#1}}
+\renewcommand{\subsubsection}[1]{\subsection{#1}}
+
+% 文档信息
+\title{\textbf{信号处理的应用场景与方法体系}\\\large 第2章第3节第1小节}
+\author{数据通信教材}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\newpage
+\setcounter{page}{1}
+
+% 包含原文件内容
+\input{ch02-2_3_1_信号应用}
+
+\end{document}

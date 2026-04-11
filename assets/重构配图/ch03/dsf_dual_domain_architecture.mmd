@@ -1,0 +1,56 @@
+%% DSF双域架构图
+%% 展示Ethernet Domain和Fabric Domain的分离
+
+flowchart TB
+    subgraph "外部网络"
+        S1[服务器/GPU]
+        S2[服务器/GPU]
+        S3[服务器/GPU]
+    end
+
+    subgraph "Ethernet Domain"
+        IN1[IN/RDSW<br/>Jericho3-AI<br/>深缓冲区]
+        IN2[IN/RDSW<br/>Jericho3-AI<br/>深缓冲区]
+        IN3[IN/RDSW<br/>Jericho3-AI<br/>深缓冲区]
+        
+        IN1 <-->|数据包<br/>路由/ACL| IN2
+        IN2 <-->|BGP会话| IN3
+    end
+
+    subgraph "Fabric Domain"
+        FN1[FN/FDSW<br/>Ramon3<br/>简化转发]
+        FN2[FN/FDSW<br/>Ramon3<br/>简化转发]
+        FN3[FN/FDSW<br/>Ramon3<br/>简化转发]
+        FN4[FN/FDSW<br/>Ramon3<br/>简化转发]
+        
+        FN1 <-->|高速互联| FN2
+        FN2 <-->|高速互联| FN3
+        FN3 <-->|高速互联| FN4
+        FN4 <-->|高速互联| FN1
+    end
+
+    S1 -->|数据包| IN1
+    S2 -->|数据包| IN2
+    S3 -->|数据包| IN3
+
+    IN1 -.->|信元喷洒| FN1
+    IN1 -.->|信元喷洒| FN2
+    IN2 -.->|信元喷洒| FN3
+    IN2 -.->|信元喷洒| FN4
+    IN3 -.->|信元喷洒| FN1
+    IN3 -.->|信元喷洒| FN3
+
+    FN1 -.->|信元汇聚| IN1
+    FN2 -.->|信元汇聚| IN1
+    FN3 -.->|信元汇聚| IN2
+    FN4 -.->|信元汇聚| IN2
+
+    style Ethernet Domain fill:#e1f5fe
+    style Fabric Domain fill:#fff3e0
+    style IN1 fill:#81d4fa
+    style IN2 fill:#81d4fa
+    style IN3 fill:#81d4fa
+    style FN1 fill:#ffcc80
+    style FN2 fill:#ffcc80
+    style FN3 fill:#ffcc80
+    style FN4 fill:#ffcc80

@@ -1,0 +1,199 @@
+\documentclass[12pt,a4paper]{book}
+
+% 中文支持
+\usepackage[UTF8]{ctex}
+
+% 页面设置
+\usepackage{geometry}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+
+% 数学支持
+\usepackage{amsmath,amssymb,amsfonts}
+
+% 图片支持
+\usepackage{graphicx}
+\graphicspath{{
+    {../assets/ch01/},
+    {../assets/ch02/},
+    {../assets/ch03/},
+    {../assets/ch04/},
+    {../assets/ch05/},
+    {../assets/ch06/},
+    {../assets/ch07/},
+    {../assets/other/}
+}}
+
+% 表格支持
+\usepackage{booktabs}
+\usepackage{array}
+
+% 代码高亮
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\small}
+
+% 超链接
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+
+% 标题格式
+\usepackage{titlesec}
+\titleformat{\chapter}{\Huge\bfseries}{第\chinese{chapter}章}{1em}{}
+\titleformat{\section}{\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+
+% 行距
+\usepackage{setspace}
+\onehalfspacing
+
+% 页眉页脚
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% 目录深度
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{2}
+
+\title{\Huge\textbf{数据通信}}
+\author{}
+\date{\today}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+\tableofcontents
+
+\mainmatter
+
+% 第一章
+\chapter{通信网络简史}
+\input{ch01-1_0_通信网络简史}
+
+\chapter{网络算法学}
+\input{ch01-1_2_网络算法学}
+
+\chapter{端系统：定时器}
+\input{ch01-1_5_端_定时器}
+
+\chapter{端系统：协议处理}
+\input{ch01-1_7_端_协议处理}
+
+% 第二章
+\chapter{数据通信模型}
+\input{ch02-2_1_数据通信模型}
+
+\chapter{传输媒体}
+\input{ch02-2_2_传输媒体}
+
+\chapter{信号}
+\input{ch02-2_3_信号}
+
+\chapter{数字信号编码}
+\input{ch02-2_4_数字信号编码}
+
+\chapter{调制与解调}
+\input{ch02-2_5_调制与解调_1_}
+
+\chapter{信道容量}
+\input{ch02-2_6_信道容量}
+
+\chapter{可靠传输}
+\input{ch02-2_7_可靠传输}
+
+\section{差错检测和纠正}
+\input{ch02-2_7_1_差错检测和纠正}
+
+\section{数据链路控制}
+\input{ch02-2_7_2_数据链路控制}
+
+\chapter{有效传输与复用}
+\input{ch02-2_8_有效传输_复用}
+
+% 第三章
+\chapter{网络拓扑}
+\input{ch03-3_1_网络拓扑}
+
+\section{蜂窝网络}
+\input{ch03-3_1_1_蜂窝网络}
+
+\chapter{交换}
+\input{ch03-3_2_交换}
+
+\section{交换机设计}
+\input{ch03-3_2_1_交换机设计}
+
+\section{前缀匹配查找}
+\input{ch03-3_2_2_前缀匹配查找}
+
+\chapter{路由}
+\input{ch03-3_3_路由}
+
+\chapter{调度}
+\input{ch03-3_4_调度}
+
+% 第四章
+\chapter{体系结构}
+\input{ch04-4_1_体系结构}
+\input{ch04-additions-dpu-cxl}
+
+\chapter{数据拷贝}
+\input{ch04-4_2_数据拷贝}
+
+\chapter{数据包处理}
+\input{ch04-4_3_数据包处理}
+\input{ch04-additions-p4-cilium}
+\input{ch04-additions-ai-network}
+
+\section{包过滤}
+\input{ch04-4_3_包过滤}
+
+\chapter{现代优化技术}
+\input{ch04-4_4_现代优化技术}
+
+\section{SIGCOMM十年洞察——互联网巨头的网络创新}
+\input{ch04-additions-sigcomm}
+
+% 第五章
+\chapter{虚拟网络与隧道}
+\input{ch05-5_1_虚拟网络与隧道}
+
+% 第六章
+\chapter{网络测量}
+\input{ch06-6__网络测量}
+
+\chapter{AI大模型训练网络}
+\input{ch06-6__AI大模型训练网络}
+
+% 第七章
+\chapter{绿色计算与数据中心可持续性}
+\input{ch07-7_绿色计算}
+
+% 附录
+\appendix
+\chapter{硬件实现}
+\input{other-硬件_待_}
+
+\chapter{网络虚拟化}
+\input{other-网络虚拟化}
+
+\chapter{传输控制优化}
+\input{other-避免传输控制overhead}
+
+\chapter{存储技术演进}
+\input{other-存储技术}
+
+\chapter{AI基础设施运维}
+\input{other-AI基础设施运维}
+
+\chapter{性能测试与评估}
+\input{other-性能测试}
+
+\backmatter
+\chapter*{参考文献}
+\addcontentsline{toc}{chapter}{参考文献}
+
+\end{document}
