@@ -1,0 +1,130 @@
+{
+  "name": "Noteleaf",
+  "version": "0.1.0",
+  "pipeline": [
+    {
+      "id": "ASSET",
+      "name": "素材获取与评估",
+      "abilities": [
+        "K1",
+        "K2",
+        "K3",
+        "M2"
+      ],
+      "inputs": [
+        "讲ID",
+        "作者偏好",
+        "用户素材(可选，K2 的 user 标记)",
+        "获取需求(可选)"
+      ],
+      "outputs": [
+        "素材台账条目",
+        "评估分",
+        "供料排序表",
+        "缺口清单",
+        "M2 显式画像读回"
+      ],
+      "gate": "asset_gate",
+      "desc": "按四层谱系获取素材，逐条过评估卡，依偏好排序供料，M2 读回已声明画像"
+    },
+    {
+      "id": "ANCHOR",
+      "name": "认知锚构建",
+      "abilities": [
+        "O1"
+      ],
+      "inputs": [
+        "讲ID",
+        "素材台账",
+        "现有成品(可选)"
+      ],
+      "outputs": [
+        "认知锚草案",
+        "叙事主线",
+        "深度判据"
+      ],
+      "gate": "anchor_gate",
+      "desc": "写作前必须先构建叙事主线+深度判据，先交锚确认再写正文"
+    },
+    {
+      "id": "WRITE",
+      "name": "写作",
+      "abilities": [
+        "O2",
+        "G2"
+      ],
+      "inputs": [
+        "认知锚",
+        "偏好",
+        "供料排序表"
+      ],
+      "outputs": [
+        "正文草稿(HTML)"
+      ],
+      "gate": "prose_gate",
+      "desc": "按认知锚与偏好写正文，机制给做法、数字带出处、图内联"
+    },
+    {
+      "id": "GATE",
+      "name": "门禁校验",
+      "abilities": [
+        "G1",
+        "D1"
+      ],
+      "inputs": [
+        "草稿HTML"
+      ],
+      "outputs": [
+        "机检结果",
+        "台账记录"
+      ],
+      "gate": "chain_gate",
+      "desc": "红线机检/自包含/图序/外链等门禁，命中只定位不做判断"
+    },
+    {
+      "id": "REVIEW",
+      "name": "独立审稿",
+      "abilities": [
+        "G2",
+        "G3",
+        "M2"
+      ],
+      "inputs": [
+        "机检通过的HTML",
+        "review JSON(可选)"
+      ],
+      "outputs": [
+        "G2 原子评测与待回源清单",
+        "审稿三态",
+        "M2 闭环回写"
+      ],
+      "gate": "review_gate",
+      "desc": "G2 自动出待回源清单，独立审稿逐条回源；闭环结论去重回写 M2"
+    },
+    {
+      "id": "DELIVER",
+      "name": "交付",
+      "abilities": [
+        "D1",
+        "D2"
+      ],
+      "inputs": [
+        "终稿HTML"
+      ],
+      "outputs": [
+        "自包含单HTML",
+        "发布验收记录",
+        "台账归档"
+      ],
+      "gate": "deliver_gate",
+      "desc": "自包含单HTML、md5/390px/打包验收、台账归档"
+    }
+  ],
+  "shared_spec": "framework/spec/spec_v0.1.0.json",
+  "ledger": ".workbuddy/ledger/ledger.jsonl",
+  "prefs_dir": "framework/prefs/",
+  "inputs_dir": "framework/inputs/",
+  "asset_ledger": "framework/asset_ledger.jsonl",
+  "memory_dir": "framework/memory/",
+  "review_dir": "framework/review/"
+}

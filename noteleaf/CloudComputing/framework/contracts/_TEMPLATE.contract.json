@@ -1,0 +1,46 @@
+{
+  "_note": "意图契约模板。每节一份，写前必填。检查器只读本文件 + 正文，两者分开存放；契约块不进正文检查输入。",
+  "contract_id": "<讲ID>::<节ID>",
+  "section_id": "<节ID，对应 HTML 里的 id，如 s26>",
+  "section_kind": "mechanism",
+  "_section_kind_enum": ["mechanism", "transition", "example", "summary"],
+  "_section_kind_change": "改节性质必须在 changelog 写 from/to/reason；无 reason 视为无依据变更",
+
+  "objectives": [
+    "读者能解释 <机制> 为什么需要",
+    "读者能算出 <量> 在 <条件> 下的结果",
+    "读者能区分 <A> 与 <B> 的差别"
+  ],
+  "_objectives_rule": "必须写成读者能做到的可测动作（解释/算出/区分/判断），动词开头；写「掌握 X」这类不可测形式一律不收",
+
+  "known_terms_ref": "<词表名>@<版本号>",
+  "_known_terms_rule": "只许引用 vocab/ 下的封闭词表并锁版本，不许自由填写；无词表或版本缺失即契约无效",
+
+  "order_contract": "phenomenon_first",
+  "_order_contract_enum": ["intuition_first", "phenomenon_first", "top_down"],
+  "_order_contract_checks": {
+    "intuition_first": "公式/形式化表达前必须出现直觉解释段",
+    "phenomenon_first": "机制说明前必须出现问题/现象描述段",
+    "top_down": "必须在开头给出分层/全貌，再逐层展开"
+  },
+
+  "required_elements": ["what", "why", "how", "cost"],
+  "_required_elements_rule": "按 section_kind 派生，可增不可减；减项必须走 changelog 并写理由。检查器只查声明过的要素，不替作者猜",
+  "_derived_by_kind": {
+    "mechanism": ["what", "why", "how", "cost"],
+    "transition": ["what"],
+    "example": ["what", "how"],
+    "summary": ["what", "why"]
+  },
+
+  "version": 1,
+  "changelog": [
+    {"version": 1, "fields": ["init"], "reason": "首次声明"}
+  ],
+  "_changelog_rule": "每次改契约 version+1，fields 写结构化字段名（不用整块 diff）；改 section_kind 或 required_elements 减项必须写 reason",
+
+  "anchors": [
+    {"value": "<数字/模型/图>", "source_ref": "<素材台账条目或出处>"}
+  ],
+  "_anchors_note": "可选。本节含数字断言时填；G2 用同一份契约回源，两条线在此合流"
+}

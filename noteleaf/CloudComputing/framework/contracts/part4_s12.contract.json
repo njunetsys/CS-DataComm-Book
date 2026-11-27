@@ -1,0 +1,69 @@
+{
+  "contract_id": "part4::s12",
+  "section_id": "s12",
+  "section_kind": "mechanism",
+  "objectives": [
+    "读者能解释传统三层架构为什么成为数据中心网络的瓶颈",
+    "读者能区分 CLOS、Fat-Tree、Leaf-Spine 三种拓扑的结构差异",
+    "读者能解释 Jupiter 如何用 CLOS 实现超大规模组网"
+  ],
+  "known_terms_ref": "part4_known_terms@1",
+  "order_contract": "phenomenon_first",
+  "required_elements": [
+    "what",
+    "why",
+    "how",
+    "cost"
+  ],
+  "version": 3,
+  "changelog": [
+    {
+      "version": 1,
+      "fields": [
+        "init"
+      ],
+      "reason": "1.2 拓扑演进节首次声明"
+    },
+    {
+      "version": 2,
+      "fields": [
+        "order_anchors"
+      ],
+      "reason": "PROPOSE 评分 1.0（L1先修5/5 L2共识1.0 覆盖1.0），与 v2 正文一致，作者确认"
+    },
+    {
+      "version": 3,
+      "fields": [
+        "order_anchors"
+      ],
+      "reason": "锚词改正文实际写法 Spine-Leaf"
+    }
+  ],
+  "anchors": [],
+  "order_anchors": [
+    {
+      "anchor": "传统三层架构",
+      "source_ref": "logic_order CONFIRM"
+    },
+    {
+      "anchor": "STP",
+      "source_ref": "logic_order CONFIRM"
+    },
+    {
+      "anchor": "CLOS",
+      "source_ref": "logic_order CONFIRM"
+    },
+    {
+      "anchor": "Fat-Tree",
+      "source_ref": "logic_order CONFIRM"
+    },
+    {
+      "anchor": "Spine-Leaf",
+      "source_ref": "logic_order CONFIRM（正文实际写法 Spine-Leaf）"
+    },
+    {
+      "anchor": "Jupiter",
+      "source_ref": "logic_order CONFIRM"
+    }
+  ]
+}

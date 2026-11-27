@@ -1,0 +1,21 @@
+{
+  "part": "part4_网络与接入",
+  "created": "2026-11-25",
+  "note": "逻辑顺序工具(logic_order.py)的素材真源。marker_out/ 为 marker-pdf 2.2.0 抽取的 Markdown，章节骨架可信；PDF 原件在 references/Stanford-CS244/，不重复存放。",
+  "materials": [
+    {
+      "id": "fattree_sigcomm08",
+      "title": "A Scalable, Commodity Data Center Network Architecture",
+      "venue": "SIGCOMM 2008",
+      "md": "marker_out/cs244_paper_FatTree_sigcomm08/cs244_paper_FatTree_sigcomm08.md",
+      "pdf_source": "CloudComputing/references/Stanford-CS244/cs244_paper_FatTree_sigcomm08.pdf"
+    },
+    {
+      "id": "jupiter_sigcomm22",
+      "title": "Jupiter Evolving: Transforming Google's Datacenter Network via Optical Circuit Switches and Software-Defined Networking",
+      "venue": "SIGCOMM 2022",
+      "md": "marker_out/cs244_paper_Jupiter_sigcomm22/cs244_paper_Jupiter_sigcomm22.md",
+      "pdf_source": "CloudComputing/references/Stanford-CS244/cs244_paper_Jupiter_sigcomm22.pdf"
+    }
+  ]
+}

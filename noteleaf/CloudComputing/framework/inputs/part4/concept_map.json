@@ -1,0 +1,28 @@
+{
+  "_note": "part4 1.2 拓扑演进节的概念映射表。pats 是英文章节标题/引言的正则；prereq 是先修依赖（打分用）。泛词已收紧，避免 pre-existing/background 之类误命中。本表是可调部件，作者可直接改。",
+
+  "传统三层架构": {
+    "pats": ["current data center network topologies", "three[- ]tier", "oversubscription", "hierarch"],
+    "prereq": []
+  },
+  "STP": {
+    "pats": ["spanning tree", "\\bstp\\b"],
+    "prereq": ["传统三层架构"]
+  },
+  "CLOS": {
+    "pats": ["clos network", "\\bclos\\b", "charles clos"],
+    "prereq": ["传统三层架构"]
+  },
+  "Fat-Tree": {
+    "pats": ["fat[- ]?tree"],
+    "prereq": ["CLOS"]
+  },
+  "Leaf-Spine": {
+    "pats": ["leaf[- ]?spine"],
+    "prereq": ["CLOS"]
+  },
+  "Jupiter": {
+    "pats": ["jupiter", "direct[- ]connect"],
+    "prereq": ["CLOS"]
+  }
+}

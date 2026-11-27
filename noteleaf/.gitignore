@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.DS_Store
+CloudComputing/framework/k1/ragflow.json
+CloudComputing/framework/k1/tickets.jsonl
+CloudComputing/framework/k1/downloads/
+CloudComputing/framework/k1/vendor_cards/
+CloudComputing/framework/asset_ledger.jsonl
+CloudComputing/framework/memory/
+CloudComputing/framework/review/
+.workbuddy/

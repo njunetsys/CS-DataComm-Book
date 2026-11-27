@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>写作规则锚 · LectureForge 通用</title>
+<style>
+:root{--ink:#25324A;--mut:#66758A;--blue:#185FA5;--blueb:#0C447C;--bluef:#E6F1FB;--teal:#0F6E56;--tealf:#E1F5EE;--amb:#854F0B;--ambf:#FAEEDA;--line:#D9E2EC;--bg:#FFFFFF;--sheet:#F7FAFD}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);line-height:1.78}
+.wrap{max-width:860px;margin:0 auto;padding:28px 18px 90px}
+h1{font-size:24px;font-weight:600;color:var(--blueb)}
+.sub{color:var(--mut);margin:8px 0 4px;font-size:13.5px}
+h2{font-size:18px;font-weight:600;color:var(--blueb);margin:36px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--bluef)}
+h3{font-size:15px;font-weight:600;color:var(--blue);margin:20px 0 6px}
+p,li{font-size:14px}
+p{margin:8px 0}
+ul,ol{margin:6px 0 10px 22px}
+li{margin:4px 0}
+.card{background:var(--sheet);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:14px 0}
+.src{color:var(--teal);font-size:12px;font-weight:600}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11.5px;font-weight:600;background:var(--bluef);color:var(--blueb)}
+.hard{background:var(--tealf);color:var(--teal)}
+.soft{background:var(--ambf);color:var(--amb)}
+.rule{border-left:4px solid var(--teal);background:var(--tealf);border-radius:8px;padding:10px 14px;margin:10px 0}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;background:#fff;border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+.foot{color:var(--mut);font-size:12.5px;margin-top:28px;border-top:1px solid var(--line);padding-top:12px}
+@page{size:A4;margin:16mm 14mm}
+@media print{body{background:#fff}.card{background:#fff;page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>写作规则锚</h1>
+<div class="sub">LectureForge 通用写作规则 · 与具体讲次无关 · 写任何一讲前必读</div>
+
+<p class="rule"><b>这份文件是什么。</b>它只回答一件事：<b>讲义该怎么写、写到多深、怎么验收</b>。不含任何一讲的具体内容。讲级素材走 K1/K2，讲级结构在写作时按本规则现场生成，不预存成文件。规则来源限定两处：本项目写书 skill 的实证规则，以及相关系统的结构契约。每条标了出处，不凭空发明。</p>
+
+<h2>一、深度判据（每节验收线）</h2>
+<div class="card">
+<p class="src">来源：textbook-writing SKILL §3.3 读者知识态轨迹 R1 至 R7 + 原认知锚深度锚</p>
+<p>写作时逐节自检，五项缺一即视为深度不足：</p>
+<ul>
+<li><b>给做法</b>：讲清「哪几步、谁执行、为什么必须有」。反例是只给名词。正例要能拆出动作序列。</li>
+<li><b>有出处</b>：每个数字挂论文、教材或官方来源，注明查取日期或页码。不写「据说」「大约」。</li>
+<li><b>有数学或结构</b>：能用公式或结构说清的，不停留在形容词。</li>
+<li><b>挂回主线</b>：每节结尾回指本讲主线，不是孤立小节。</li>
+<li><b>术语首现给英文</b>：首次出现给「中文（英文，缩写）」格式，之后用缩写。</li>
+</ul>
+<p><b>零陌生名词四条硬规则</b>：术语首次出现时学生必须已知或当场解释（R1）；符号首次出现先定义再用（R2）；同名不同义要造新名区分（R3）；「为什么是这个数」必须给夹逼、计数或物理理由（R4）。</p>
+<p><b>篇幅</b>：讲清楚不等于写长。控制目标篇幅，能用一个推导说清就不用三段。</p>
+</div>
+
+<h2>二、读者知识态轨迹</h2>
+<div class="card">
+<p class="src">来源：textbook-writing SKILL §3.3 审稿动作 + book-production 五动作审稿</p>
+<p>写作时按「进入时学生已有什么 → 离开时多知道了什么」逐段自问。前提未建立就往上堆，是错位。</p>
+<p><b>段落两条</b>：一段一个主语链，换主语先交代视角；段首必须真接住上段结论，复指词要指得出上段具体一句，不许只摆一个「这」。</p>
+<p><b>六种接龙</b>：章间承诺与兑现、因果推进、指代接龙、视角切换、校正句、章末回收章首问题。写完逐段找，找不到接龙的地方就是断点。</p>
+</div>
+
+<h2>三、教学改写四板斧</h2>
+<div class="card">
+<p class="src">来源：textbook-writing SKILL §3.3 教学改写四板斧</p>
+<ul>
+<li><b>找支点</b>：用学生刚学过的机制讲新机制，不引入新概念。</li>
+<li><b>分层命名</b>：术语冲突时造新名并显式对比。</li>
+<li><b>给来由</b>：每个关键数字配推导，不只给结论。</li>
+<li><b>加对照框</b>：术语用概念框、误区用陷阱框、代价用瓶颈框。</li>
+</ul>
+</div>
+
+<h2>四、可核对锚纪律</h2>
+<div class="card">
+<p class="src">来源：book-production SKILL 锚点纪律（2026-11-14 实证硬约束）+ 反噬警告</p>
+<p class="rule">凡写进落点表的锚，必须先对目标文件做字面检索确认存在。找不到就换真锚，或明写「书里没有，这是配套材料新补的」。配套页不得冒充教材正文已有内容，也不得把尚未拍板的措辞写成书里的结论。</p>
+<p>行号只作定位提示，手稿改动后以关键词回查为准。</p>
+<p><b>反噬警告</b>：格式越易懂越难质检。换格式治不了空洞内容，错误在动画里比在文字里更难发现。每个可视化必须同时留一段可复制的文本断言（公式、章号、原文数值）。看着清楚不等于内容正确。</p>
+</div>
+
+<h2>五、图注与实现规范</h2>
+<div class="card">
+<p class="src">来源：原认知锚 §5 体例 + cloud-lecture-writing SKILL 配图红线</p>
+<ul>
+<li><b>图号</b>：随章编号，格式为「图 N.M」，图注用全角空格加冒号再概括。</li>
+<li><b>图前引入句</b>：正文先指认这张图要回答什么，再引出图注。</li>
+<li><b>图注去来源</b>：不写图源行。</li>
+<li><b>实现</b>：优先内联 SVG 教学示意图，或用已授权素材 base64 内嵌。零外链。</li>
+<li><b>图内文字守红线</b>：图里写的字和正文一样查。</li>
+<li><b>图密度</b>：每个关键机制至少一图，与正文相邻，被正文引用。</li>
+<li><b>素材来源</b>：用权威现成图并注明出处；不自绘凑数，不补边不裁边。</li>
+</ul>
+</div>
+
+<h2>六、五动作审稿</h2>
+<div class="card">
+<p class="src">来源：textbook-writing SKILL §3.3 审稿动作（改写者不得自审）</p>
+<ol>
+<li><b>读者知识态轨迹</b>：逐段记进入时已有什么、离开时多知道了什么。</li>
+<li><b>路标审计</b>：文中所有「下面会展开」「第 N 章」「两式相夹」是否兑现。</li>
+<li><b>引用读回</b>：打开每个引用核实语义对不对，不只查缺失。</li>
+<li><b>归属与语气</b>：主题配不配本章，是否同一支笔，有无机器腔。</li>
+<li><b>硬错误</b>：技术断言逐条验算，包括自己修法引入的新错。</li>
+</ol>
+<p>缺任一项即视为未审。改写引入的新错必须当代码审。</p>
+</div>
+
+<h2>七、体例红线</h2>
+<div class="card">
+<p class="src">来源：textbook-writing / cloud-lecture-writing SKILL 红线清单</p>
+<p><span class="tag hard">教材体例</span> 散文禁破折号，范围写「10 至 20」；去公司化；跨章写「第 N 章」；图表引用用「图~ref~」「表~ref~」；浮动体必被正文引用且与图相邻；不写「本章地图」；无难度分级、无习题。</p>
+<p><span class="tag soft">讲义体例</span> 与教材相反：破折号保留、允许厂商名、路标句保留。门禁对讲义体例放行厂商名命中，其余红线仍须清零。</p>
+<p><span class="tag">通用</span> 全成果自包含单 HTML，零外链零外依赖；脚本放临时目录，不进项目。</p>
+</div>
+
+<h2>八、结构契约（相关系统做法）</h2>
+<div class="card">
+<p class="src">来源：OpenMAIC 源码 outline-schema.ts 与 outline.ts（GitHub 实测核对）</p>
+<p>该系统的大纲由模型流式生成，用强 schema 判结构合法，不判写得好不好。可借鉴三条：</p>
+<ul>
+<li><b>必填字段齐备</b>：每场大纲必须给 title、description、keyPoints、teachingObjective、estimatedDuration、order。缺字段即拒绝。</li>
+<li><b>唯一性校验</b>：id 与 order 各不重复，否则拒绝。</li>
+<li><b>边界与重试</b>：场景数上限、输出字节上限、空输出自动重试再换备用模型。</li>
+</ul>
+<p>我们的对应物：讲级结构在写作时现场生成，必含主线一句话、组织骨架、深度判据、可核对锚四样；缺任一样即不合格。机检只查部件在不在，质量仍归人。</p>
+</div>
+
+<h2>九、写前握手</h2>
+<div class="card">
+<p class="src">来源：原认知锚 §8 握手要求（已去讲级专属）</p>
+<ol>
+<li><b>写前必读</b>：动笔前先读本规则，按深度判据与知识态轨迹自检。</li>
+<li><b>先定结构再写正文</b>：产出主线一句话、骨架表、判据自查表，确认后进正文。</li>
+<li><b>每节带判据</b>：正文每节末尾附一行自检，写了哪个做法、挂了哪个数字、回了哪条主线。</li>
+<li><b>门禁照跑</b>：机检、独立审稿、台账照常执行。规则不替代门禁，门禁只定位不做判断。</li>
+</ol>
+</div>
+
+<div class="foot">LectureForge · 写作规则锚 · 通用版 · 自包含单 HTML，零外部依赖。本文件只含写作规则，不含任何讲级内容。</div>
+
+</div>
+</body>
+</html>

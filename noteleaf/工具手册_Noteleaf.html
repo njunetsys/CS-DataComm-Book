@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Noteleaf 工具手册（独立包版）· 2026-11-27</title>
+<style>
+body{font-family:-apple-system,"PingFang SC","Helvetica Neue",sans-serif;max-width:1000px;margin:36px auto;padding:0 24px;line-height:1.7;color:#1a1a1a}
+h1{font-size:23px;border-bottom:3px solid #2c5f8a;padding-bottom:10px}
+h2{font-size:19px;color:#2c5f8a;margin-top:40px;border-left:4px solid #2c5f8a;padding-left:10px}
+h3{font-size:16px;margin-top:26px;color:#1f3a52}
+h4{font-size:14.5px;margin-top:18px;color:#444}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+th,td{border:1px solid #d0d7de;padding:6px 10px;text-align:left;vertical-align:top}
+th{background:#f0f4f8;white-space:nowrap}
+code{background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:12.5px;font-family:"SF Mono",Menlo,monospace}
+pre{background:#0d1117;color:#e6edf3;padding:12px 16px;border-radius:8px;overflow-x:auto;font-size:12.5px;line-height:1.6}
+pre code{background:none;color:inherit;padding:0}
+.box{background:#f0f7ff;border-left:4px solid #2c5f8a;padding:10px 16px;margin:14px 0;border-radius:0 6px 6px 0}
+.warnbox{background:#fff8e6;border-left:4px solid #d4a72c;padding:10px 16px;margin:14px 0;border-radius:0 6px 6px 0}
+.tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;font-weight:600;margin-right:4px}
+.t-fail{background:#ffebe9;color:#cf222e}
+.t-warn{background:#fff8c5;color:#9a6700}
+.t-ok{background:#dafbe1;color:#1a7f37}
+.t-stage{background:#ddf4ff;color:#0969da}
+.t-ability{background:#fbefff;color:#8250df}
+nav{background:#f6f8fa;border:1px solid #d0d7de;border-radius:8px;padding:14px 20px;margin:18px 0;font-size:14px;columns:2}
+nav a{color:#0969da;text-decoration:none;display:block;margin:2px 0}
+.small{font-size:12.5px;color:#57606a}
+.comp{border:1px solid #d0d7de;border-radius:10px;padding:4px 20px 16px;margin:22px 0}
+.comp>h3{margin-top:16px;border-bottom:1px dashed #d0d7de;padding-bottom:6px}
+.kv{font-size:13px;color:#57606a;margin:4px 0}
+</style>
+</head>
+<body>
+
+<h1>Noteleaf 工具手册（组件设计 + 使用方法 + 扩展操作）</h1>
+<p class="small">版本：2026-11-27 独立包版 · 代码：<code>tools/lf/</code>（13 个模块）+ <code>tools/check_chain.py</code> · 数据：<code>CloudComputing/framework/</code> · 纯 Python 标准库，无需安装任何第三方包 · 所有命令在包根目录运行</p>
+
+<nav>
+<a href="#s1">1 总览与设计哲学</a>
+<a href="#s2">2 六段流水线与能力模型</a>
+<a href="#s3">3 组件详解：pipeline_run</a>
+<a href="#s4">4 组件详解：k1_acquire（K1）</a>
+<a href="#s5">5 组件详解：doc_read / asset_score（K2）</a>
+<a href="#s6">6 组件详解：prefs（K3）</a>
+<a href="#s7">7 组件详解：preflight（O2）</a>
+<a href="#s8">8 组件详解：check_chain（GATE/M1）</a>
+<a href="#s9">9 组件详解：lecture_lint</a>
+<a href="#s10">10 组件详解：rubric_check（G2）</a>
+<a href="#s11">11 组件详解：intent_ga（契约）</a>
+<a href="#s12">12 组件详解：logic_order（逻辑顺序）</a>
+<a href="#s13">13 组件详解：memory（M2）</a>
+<a href="#s14">14 组件详解：doc_slice / spec</a>
+<a href="#s15">15 扩展操作：如何添加知识点</a>
+<a href="#s16">16 典型工作流</a>
+<a href="#s17">17 排错表</a>
+</nav>
+
+<h2 id="s1">1 总览与设计哲学</h2>
+<p>Noteleaf 是云计算讲义（6 份自包含单文件 HTML，part1 至 part6）的生产框架。它不是「一键生成器」，而是一条<b>人机分工的质检链</b>：机器负责可复现的定位与核对，人负责裁决与创作。</p>
+<table>
+<tr><th>原则</th><th>落地方式</th></tr>
+<tr><td>spec 单一真源</td><td>六段顺序、能力归属、门禁名都写在 <code>framework/spec/spec_v0.1.0.json</code>；pipeline 不硬编码顺序，spec 漂移会被 FAIL 暴露</td></tr>
+<tr><td>机器只定位，裁决归人</td><td>所有检查输出「有/没有、过/不过、命中在哪一行」；教学结构检查永久 WARN 不 BLOCK，防「合规稿」KPI 游戏</td></tr>
+<tr><td>append-only 台账</td><td>素材台账、K1 工单、决策、门禁 run 记录全部只追加；同名冲突报错不覆盖，可回溯</td></tr>
+<tr><td>显式意图</td><td>写作前必须声明偏好（K3）与契约（intent_ga），缺项即拦（O2）；画像只收显式字段，不推断</td></tr>
+<tr><td>断网不撒谎</td><td>网络失败落「待取」工单而非「已取」；运行中文件被改由 doc_stable 暴露，不拿旧快照假装通过</td></tr>
+<tr><td>纠错转检查</td><td>同一个错只人工纠正一次，然后写成 lint 规则/脚本，违反即报错（参考 Lauren Tan / Claude Code 方法论）</td></tr>
+</table>
+
+<h2 id="s2">2 六段流水线与能力模型</h2>
+<p>能力编号沿用设计蓝图：K=知识/素材，O=写作约束，G=质检，D=交付，M=记忆/统计。</p>
+<table>
+<tr><th>段</th><th>能力</th><th>产出物契约</th><th>负责组件</th><th>门禁</th></tr>
+<tr><td><span class="tag t-stage">ASSET</span></td><td><span class="tag t-ability">K1 K2 K3 M2</span></td><td>素材台账 + 供料排序 + 画像读回</td><td>k1_acquire / doc_read / asset_score / prefs / memory</td><td>台账非空</td></tr>
+<tr><td><span class="tag t-stage">ANCHOR</span></td><td><span class="tag t-ability">O1</span></td><td>通用写作规则（九节齐备）</td><td>preflight.inspect_anchor</td><td>部件无缺</td></tr>
+<tr><td><span class="tag t-stage">WRITE</span></td><td><span class="tag t-ability">O2 G2</span></td><td>生成稿 HTML + 前置门禁</td><td>preflight（prefs/anchor/assets）</td><td>prefs 已声明</td></tr>
+<tr><td><span class="tag t-stage">GATE</span></td><td><span class="tag t-ability">G1 D1</span></td><td>红线/自包含/外链门禁</td><td>check_chain（进程内 inspect）</td><td>FAIL=0</td></tr>
+<tr><td><span class="tag t-stage">REVIEW</span></td><td><span class="tag t-ability">G2 G3 M2</span></td><td>rubric 待回源清单 + 三态审稿 + 契约 CHECK/ORDER</td><td>rubric_check / intent_ga / memory</td><td>默认不拦，--require-rubric 才拦</td></tr>
+<tr><td><span class="tag t-stage">DELIVER</span></td><td><span class="tag t-ability">D1 D2</span></td><td>自包含单 HTML + md5 快照</td><td>pipeline_run.scan_outbound</td><td>真外链=0</td></tr>
+</table>
+
+<div class="comp" id="s3">
+<h3>3 pipeline_run.py — 六段编排主链（463 行）</h3>
+<p class="kv">位置 <code>tools/lf/pipeline_run.py</code> · 角色：端到端编排器，唯一入口</p>
+<h4>方法</h4>
+<ul>
+<li><b>共享文档上下文</b>：<code>read_doc()</code> 在 run 开头一次读入 HTML 的 bytes/text/md5，GATE/REVIEW/DELIVER 全程复用，不再反复读 3.5MB 大文件（token 与 IO 双省）。</li>
+<li><b>doc_stable 收尾核对</b>：run 结束时重算文件 md5，运行中被别处改动则报 <code>CONTEXT</code> FAIL，不拿旧快照假装通过。</li>
+<li><b>顺序来自 spec</b>：<code>pipeline_order(load_spec())</code> 决定段序；spec 里出现无执行器的段直接 FAIL 暴露漂移。</li>
+<li><b>进程内门禁</b>：GATE 段直接调 <code>check_chain.inspect(text=, digest=)</code>，判据与 CLI 完全一致。</li>
+<li><b>讲义体例豁免</b>：若门禁失败全来自 prose_fast 且只有厂商名命中（破折号/外链等为 0），判 <code>PASS(讲义体例放行厂商)</code>，命中数仍展示待作者复核。</li>
+<li><b>契约检查</b>：REVIEW 段调 <code>check_contracts()</code>，对 contracts/ 下讲 ID 匹配的全部契约跑四要素 CHECK + 逻辑顺序 ORDER，结果进 full json。</li>
+<li><b>摘要/完整分离</b>：<code>--json</code> 只打摘要；完整证据落 <code>review/&lt;讲ID&gt;_pipeline_full.json</code>；run 记录追加 <code>.workbuddy/ledger/ledger.jsonl</code>。</li>
+</ul>
+<h4>各段判定要点</h4>
+<table>
+<tr><th>段</th><th>ok 判据</th><th>备注</th></tr>
+<tr><td>ASSET</td><td>台账条数 &gt; 0</td><td>附供料 top5（user 置顶，其余 层优先级×评估分）与 M2 画像</td></tr>
+<tr><td>ANCHOR</td><td>写作规则九节部件齐备</td><td>跨讲共用一份 ANCHOR_RULES.html</td></tr>
+<tr><td>WRITE</td><td>生成稿存在 + O2 前置 PASS</td><td>prefs 缺项即拦</td></tr>
+<tr><td>GATE</td><td>check_chain 无 FAIL 门</td><td>厂商名单独命中可豁免</td></tr>
+<tr><td>REVIEW</td><td>默认 pending 不算 FAIL</td><td>--require-review 要求闭环；--require-rubric 要求 G2 无真 FAIL</td></tr>
+<tr><td>DELIVER</td><td>真外链 = 0</td><td>XML 命名空间白名单放行</td></tr>
+</table>
+<h4>使用</h4>
+<pre><code>python3 tools/lf/pipeline_run.py --lecture part4_20261125 \
+    --html "CloudComputing/framework/part4_网络与接入_修订稿v3_20261125.html" \
+    --json [--require-review] [--require-rubric] [--full-json] [--no-ledger]
+# 退出码 0=PASS 1=FAIL</code></pre>
+</div>
+
+<div class="comp" id="s4">
+<h3>4 k1_acquire.py — K1 素材获取（561 行）</h3>
+<p class="kv">位置 <code>tools/lf/k1_acquire.py</code> · 数据 <code>framework/k1/</code>（paper_seeds.json 种子表 / tickets.jsonl 工单 / ragflow.json 端点 / downloads / vendor_cards）</p>
+<h4>职责边界</h4>
+<p>只负责「弄到手」：论文清单、厂商数字卡、教材下载。评估归 K2，取舍归 K3。所有获取动作追加工单，<b>name+kind+urn 冲突报错不覆盖</b>。</p>
+<h4>五个子命令与方法</h4>
+<table>
+<tr><th>命令</th><th>方法</th></tr>
+<tr><td><code>PAPERS &lt;主题词...&gt;</code></td><td>按主题命中种子表（标准知识点锚：why_background + capability_signal），扫 <code>references/</code> 本地副本（文件名 token 包含匹配），有本地=have 否则 queued</td></tr>
+<tr><td><code>--ragflow</code> 发现层</td><td>对每主题发中/英双查询（EN_QUERY 映射表），按文档去重取最高 sim chunk；<b>每主题配额</b>防单一主题独占；标题从正文首段提取（文档名可能只是 DOI）；与既有工单标题重叠 ≥0.45 不入池；过滤大模型/RAG 类噪声文档</td></tr>
+<tr><td><code>VENDOR &lt;name&gt; &lt;url&gt;</code></td><td>抓官方页，正则抽价格/配额行（元/¥/小时/GB/vCPU…）成「数字卡」落盘；抓不到落 queued 工单，不撒谎</td></tr>
+<tr><td><code>TEXTBOOK &lt;name&gt; &lt;url|路径&gt;</code></td><td>URL 下载或本地复制到 downloads/，失败落工单</td></tr>
+<tr><td><code>PREP &lt;讲ID&gt; &lt;主题词...&gt;</code></td><td>一键素材包：种子+发现层+<b>三态分级</b>（CRAG 思路：high=种子锚或 sim≥0.7，ambiguous=发现层低相似待核，gap=无素材）+ 主题覆盖率（每主题有 1 条可用即覆盖）+ 缺口清单</td></tr>
+</table>
+<h4>使用</h4>
+<pre><code>python3 tools/lf/k1_acquire.py PREP 03_存储与数据 存储 对象存储 文件系统 --ragflow --limit 8
+python3 tools/lf/k1_acquire.py PAPERS 弹性计算 --ragflow --min-sim 0.5
+python3 tools/lf/k1_acquire.py SUMMARY</code></pre>
+<div class="warnbox">实测教训（已固化进代码）：全局按相似度取 Top-N 会被 KB 里 AI 基建类文档淹没，必须分组配额 + 标题弱重叠门禁。RAGFlow 端点/token 在 <code>k1/ragflow.json</code>，缺失则跳过发现层并提示。</div>
+</div>
+
+<div class="comp" id="s5">
+<h3>5 doc_read.py + asset_score.py — K2 解析与评估</h3>
+<h4>5.1 doc_read.py（169 行）：文档解析层</h4>
+<p class="kv">照 OpenMAIC 解析层设计：按格式选解析器 → 保留结构 → 算内容指纹 → 统计可复核信号。只读、不评分、不入账。</p>
+<ul>
+<li><b>解析器路由</b>：md/txt/html 直读（html 剥标签）；pdf/docx/pptx 走 <code>marker_single</code>（临时目录，不污染项目），读回 markdown + meta 的 block_counts（版面模型真值）。</li>
+<li><b>结构统计</b>：优先 marker 的 SectionHeader/Table 计数；无版面模型时退回 markdown 正则（可手算复核），表数不猜（记 0）。</li>
+<li><b>相关性信号</b>：主题词在正文出现次数（可手算），不用黑箱 embedding；coverage = 命中主题数/主题总数。主题词必须与 PREP 同一批，保证分母一致。</li>
+<li><b>输出</b>：name/md5/chars/headings/tables/table_rows/formulas/hits/coverage/text_preview；<code>--save</code> 落 parsed.md 供后续引用。</li>
+</ul>
+<pre><code>python3 tools/lf/doc_read.py READ 论文.pdf --topics 拓扑 CLOS --mode fast [--save 目录]</code></pre>
+<h4>5.2 asset_score.py（325 行）：五维评估卡</h4>
+<p class="kv">总分 = Σ(维度分×权重)，每维 0..1，计分透明可复核。</p>
+<table>
+<tr><th>维度</th><th>权重</th><th>判据映射</th></tr>
+<tr><td>源头层级</td><td>0.30</td><td>paper=1.0 / book_top=0.9 / vendor、course=0.85 / book=0.65 / blog=0.35 / video=0.3</td></tr>
+<tr><td>机制完整度</td><td>0.25</td><td>high（给做法/步骤/数字）=1.0 / mid（名词+一句机制）=0.6 / low（只给名词）=0.3</td></tr>
+<tr><td>可核对</td><td>0.20</td><td>yes=1.0 / partial=0.6 / no=0.2；<b>机器读文件默认强制 no</b>，人工显式 --cite yes 才承认（cite_basis 留痕）</td></tr>
+<tr><td>时效</td><td>0.15</td><td>当年 1.0，每差一年 -0.12，下限 0.2</td></tr>
+<tr><td>许可</td><td>0.10</td><td>cc/own/authorized=1.0 / commercial=0.35 / unknown=0.3</td></tr>
+</table>
+<ul>
+<li><code>SCORE_FILE</code>：读文件后用解析证据自动判机制（结构块≥5 且覆盖≥0.5 → high；≥2 或有覆盖 → mid；否则 low），不靠 snippet 猜。</li>
+<li><code>FROM_TICKETS</code>：K1→K2 打通。工单未入台账者自动粗打分（层映射：paper→L4 / vendor_card→L3 / textbook→L1），mechanism 用 snippet 启发式，cite 一律 no，回写工单 status=scored。<code>--dry-run</code> 只算不改。</li>
+<li><code>sort_supply()</code>：供料排序。user 自供条目置顶（原 K4 并入，唯一数据源是台账），其余按 层优先级×评估分 降序。</li>
+<li>条目不可变：同 name 冲突报错不覆盖。</li>
+</ul>
+<pre><code>python3 tools/lf/asset_score.py SCORE_FILE 论文.pdf --topics 拓扑 --layer L4 --src paper --recency 2022
+python3 tools/lf/asset_score.py FROM_TICKETS [--dry-run]
+python3 tools/lf/asset_score.py SUMMARY</code></pre>
+</div>
+
+<div class="comp" id="s6">
+<h3>6 prefs.py — K3 偏好矩阵（238 行）</h3>
+<p class="kv">位置 <code>tools/lf/prefs.py</code> · 数据 <code>framework/prefs/&lt;讲ID&gt;_prefs.json</code></p>
+<h4>方法</h4>
+<ul>
+<li><b>声明式偏好</b>：四维（应用/原理/机制/架构）多选，写前声明；只影响供料排序与篇幅权重，不直接改正文。未声明默认「机制+原理」。</li>
+<li><b>供料排序表</b>：每维度带各素材层权重（如「原理」偏 L4/L1，「应用」偏 L3/L2），选中维度权重 1.0、未选 0.6 折算叠加；输出 layer_priority + length_factor（篇幅权重因子）+ 写作动作清单。</li>
+<li><b>受众/难度</b>：可选元数据（入门/进阶/高级），与四维正交，不改排序。</li>
+<li><b>VERIFY 落实检查</b>：在成品 HTML 找各选中维度的信号词（如机制=步骤/状态机/协议/字节），命中=有落点，未命中=WARN 待人工确认，不判好坏不阻塞。</li>
+</ul>
+<pre><code>python3 tools/lf/prefs.py --declare 03_存储与数据 '["机制","架构"]' 研究生 进阶
+python3 tools/lf/prefs.py VERIFY 03_存储与数据 成品.html
+python3 tools/lf/prefs.py 03_存储与数据   # 报告模式</code></pre>
+</div>
+
+<div class="comp" id="s7">
+<h3>7 preflight.py — O2 前置门禁（220 行）</h3>
+<p class="kv">位置 <code>tools/lf/preflight.py</code> · 写作 WRITE 前的硬约束</p>
+<h4>三道门</h4>
+<table>
+<tr><th>门</th><th>判据</th><th>等级</th></tr>
+<tr><td>prefs</td><td><code>prefs/&lt;讲ID&gt;_prefs.json</code> 存在且维度合法</td><td><span class="tag t-fail">硬阻塞</span> 附补齐命令</td></tr>
+<tr><td>anchor</td><td>写作规则 ANCHOR_RULES.html 九节部件齐备（深度判据/知识态轨迹/四板斧/可核对锚/图注规范/五动作审稿/体例红线/结构契约/写前握手）</td><td><span class="tag t-fail">硬阻塞</span>；h2 id 重复、空节为软提醒</td></tr>
+<tr><td>assets</td><td>素材台账非空</td><td><span class="tag t-warn">只 WARN</span>（作者可能已有一手素材，不误伤）</td></tr>
+</table>
+<p>门禁哲学：机器只判「有没有」+ 给出补齐命令，「好不好」交作者。退出码 0=PASS 1=FAIL 2=用法错；结果落 ledger。</p>
+<pre><code>python3 tools/lf/preflight.py --lecture 03_存储与数据 [--json] [--missing-only]</code></pre>
+</div>
+
+<div class="comp" id="s8">
+<h3>8 check_chain.py — GATE 门禁编排器 / M1（378 行）</h3>
+<p class="kv">位置 <code>tools/check_chain.py</code> · 把散落在 skill 与 tools 的校验脚本收口成一条可复现 gate 链</p>
+<h4>方法</h4>
+<ul>
+<li><b>资产类型自动探测</b>：tex（目录/单章）/ html / pptx，按类型选门组合。</li>
+<li><b>门清单</b>：tex_compile（编译/页数/Overfull，复用 check_chapter.sh）、redlines（破折号/厂商名/孤儿浮动体/图引用体例，A/B/C/D 计数）、html_delivery（外链/base64/标签/锚点）、deck_package（PPTX 包校验 13 项）、bundle_manifest（md5/图数/外链图/真外链，非 data: 图即 FAIL）、prose_fast（散文本兜底：破折号/数字双连/asciitilde/厂商/外链）。</li>
+<li><b>状态机 + 台账</b>：每门输出 ok/fail/hits/evidence，全链终止码=有无 FAIL；每次 run 追加 <code>.workbuddy/ledger/ledger.jsonl</code>，<code>--list</code> 汇总历史门通过率（分母只算真有 gates 的 run，防虚高）。</li>
+<li><b>进程内入口</b>：<code>inspect(text=, digest=)</code> 供 pipeline 复用，避免重复读 HTML；机检命中留 human_verify 占位，判定交人（五动作审稿）。</li>
+</ul>
+<pre><code>python3 tools/check_chain.py 讲义.html [--kind html] [--allow-vendor] [--json] [--out FILE]
+python3 tools/check_chain.py --list   # 历史台账汇总</code></pre>
+<div class="warnbox">讲义体例与教材相反：讲义允许厂商名、保留出处外链；教材全禁。check_chain 的厂商/外链 FAIL 在讲义里属已知豁免项，由 pipeline GATE 段的 vendor_only 判定或作者复核处理。</div>
+</div>
+
+<div class="comp" id="s9">
+<h3>9 lecture_lint.py — 机械痕迹体检（219 行）</h3>
+<p class="kv">位置 <code>tools/lf/lecture_lint.py</code> · 2026-11-25 用户拍板「机械项，不动文风」；文风层（句长/套路比喻/作者态度）刻意不查</p>
+<h4>检查项与判据</h4>
+<table>
+<tr><th>项</th><th>等级</th><th>判据</th><th>处理建议</th></tr>
+<tr><td>L1 破折号</td><td><span class="tag t-fail">FAIL</span></td><td><code>——</code> / en dash 数字范围 / 裸 <code>--</code></td><td>按语境改冒号/逗号/拆句；范围改「至」</td></tr>
+<tr><td>L2 画外音</td><td><span class="tag t-fail">FAIL</span></td><td>OCR 已核验/已校对/据截图/编者注/待补</td><td>删过程性备注，图注只留说明+来源</td></tr>
+<tr><td>L3 空锚文本</td><td><span class="tag t-fail">FAIL</span></td><td>去围观/看热议/看演进/看详解/点这里/详见 等短锚</td><td>重要内容并入正文，否则删</td></tr>
+<tr><td>L4 段首套话</td><td><span class="tag t-warn">WARN</span></td><td>值得注意的是/不难发现/综上所述/众所周知</td><td>删或改直陈，不动句子主体</td></tr>
+<tr><td>L5 空对举</td><td><span class="tag t-warn">WARN</span></td><td>「不是 A，而是 B」正则</td><td>A/B 有实质则保留，套话才改</td></tr>
+<tr><td>L6 图引用</td><td><span class="tag t-warn">WARN</span></td><td>每个 div.cap 的「图 N-M」正文有无引用（剥 fig 容器后核对）</td><td>段尾补（见图 N-M）</td></tr>
+<tr><td>L7 图大小</td><td><span class="tag t-warn">WARN</span></td><td>像素宽 600-1000；PNG≤400KB / JPEG≤250KB（Pillow 实测）</td><td>等比缩放/压缩，保格式</td></tr>
+<tr><td>L8 同页</td><td><span class="tag t-warn">WARN</span></td><td>.fig 缺 break-inside:avoid</td><td>补 CSS 防图/图注跨页</td></tr>
+</table>
+<h4>实现要点</h4>
+<ul>
+<li>剥 style/script/base64 后按<b>原行号</b>报位置；标签换成空格而非空串，避免跨单元格单字「—」被拼成「——」误报（实测修过的坑）。</li>
+<li>输出 等级+行号+原文片段+处理建议，人工按 SKILL.md §6.1 决定怎么处理；退出码 1=有 FAIL。</li>
+</ul>
+<pre><code>python3 tools/lf/lecture_lint.py 讲义.html [--json] [--out 台账.json]
+python3 tools/lf/lecture_lint.py --selfcheck</code></pre>
+</div>
+
+<div class="comp" id="s10">
+<h3>10 rubric_check.py — G2 原子 rubric 评测器（253 行）</h3>
+<p class="kv">位置 <code>tools/lf/rubric_check.py</code> · 方法引自 PresentBench（arXiv 2603.07244）：二分判定 0/1 + 局部证据，不做模糊打分</p>
+<h4>解析器：CtxParser（标题栈）</h4>
+<p>HTML 小节通常不包裹 <code>&lt;section&gt;</code>，用「后出现即覆盖」的标题栈模拟：新标题弹出层级 ≥ 它的更细标题，段落记录归属标题链。li/td/th 文本记为 t=x 事件，供图引用核对但不参与空节/断言统计。img 走 handle_startendtag 配对（自闭合标签不漏）。</p>
+<h4>七个原子项（含实测校准记录）</h4>
+<table>
+<tr><th>项</th><th>维度</th><th>判据</th><th>校准记录</th></tr>
+<tr><td>R1</td><td>结构/完整</td><td>h2 节正文总长 ≥120 字</td><td>初版按字典分组会继承过期文本误伤，改标题栈按文档顺序归属；h1 题与前导段不算节</td></tr>
+<tr><td>R2</td><td>结构/清晰</td><td>h2≥2 且标题 ≥2 字</td><td>初版要求 h2≥3 且标题 &gt;8 字，「序章」2 字被误报，放宽</td></tr>
+<tr><td>R3</td><td>忠实度</td><td>含数字（NUM 正则：ms/MB/%/倍/vCPU…）但无出处词（论文/官方/报告/[N]/据…）且无软化词（约/量级/左右）且段长 &gt;40 → 导<b>待回源清单</b></td><td>核心产出：审稿人拿清单逐条对照素材，机器不判对错</td></tr>
+<tr><td>R4</td><td>视觉</td><td>正文「图 N-M / 图 N.M」引用数 &gt;0（双口径，li/td 里的引用也算）</td><td>初版「无 alt 即 FAIL」被 13 张无 alt 拖垮，校准为零引用才 FAIL、缺 alt 降 WARN</td></tr>
+<tr><td>R5</td><td>清晰/术语</td><td>含核心术语无定义句的段落数 &lt; max(3, 段数/5)</td><td>启发式，只 WARN 不计 FAIL</td></tr>
+<tr><td>R6</td><td>完整/覆盖</td><td>h2≥2 视作主干完整</td><td>—</td></tr>
+<tr><td>R7</td><td>完整/示例性</td><td>每 h2 节有示例信号词（例如/案例/举个…）</td><td>整页无这些词未必有错，降 WARN</td></tr>
+</table>
+<p><code>--export-json</code> 把待回源清单与无 alt 图导出，供独立审稿对照素材回源。与 check_chain 分工：红线机检抓格式（破折号/去公司化/外链），rubric 抓结构/忠实度（空节/无来源断言/图无引用）。</p>
+<pre><code>python3 tools/lf/rubric_check.py 讲义.html [--json] [--export-json 待回源.json]</code></pre>
+</div>
+
+<div class="comp" id="s11">
+<h3>11 intent_ga.py — 意图契约 + G-A 四要素 + ORDER（369 行）</h3>
+<p class="kv">位置 <code>tools/lf/intent_ga.py</code> · 契约存 <code>framework/contracts/&lt;讲&gt;_&lt;节&gt;.contract.json</code>，模板 <code>_TEMPLATE.contract.json</code></p>
+<h4>哲学</h4>
+<p>不评「这节浅不浅」，只回答可核对问题「声明的要素有没有落点、落在哪」。基准是意图契约不是模型印象；契约校验不过 → 整份不判，直接报无效。</p>
+<h4>契约字段纪律（validate_contract）</h4>
+<table>
+<tr><th>字段</th><th>纪律</th></tr>
+<tr><td>section_kind</td><td>mechanism/transition/example/summary；变更必须 changelog 写 from/to/reason，无 reason 视为无依据变更</td></tr>
+<tr><td>objectives</td><td>必须「读者能+可观察动词」（解释/算出/区分/判断/复述/比较/识别）；「掌握/了解/熟悉/理解」一律拒收</td></tr>
+<tr><td>known_terms_ref</td><td>只许引用 vocab/ 封闭词表并锁版本（name@version），版本漂移即无效</td></tr>
+<tr><td>required_elements</td><td>按 kind 派生（mechanism=what/why/how/cost），可增不可减；减项必须 changelog 写理由</td></tr>
+<tr><td>order_contract</td><td>intuition_first / phenomenon_first / top_down 三选一</td></tr>
+<tr><td>anchors</td><td>G2 事实锚（数字断言回源用）</td></tr>
+<tr><td>order_anchors</td><td>逻辑顺序锚（logic_order CONFIRM 写入）；字符串或 {anchor,source_ref} 对象均可</td></tr>
+</table>
+<h4>四要素 CHECK：双层判据</h4>
+<ul>
+<li>第一层信号词（what=定义为/指的是/核心是…，why=因为/为了/局限…，how=步骤/监测/写入…，cost=代价/权衡/缺点/相比…）只说明「像是在讲这个要素」。</li>
+<li>第二层实质锚（可核对数字 / 具体术语 / 因果词 / 对比词 / 机制对象）必须信号窗内（前后 60 字、句内同窗，跨句会串味）至少命中一个。</li>
+<li>只有信号没有实质锚 = <b>HOLLOW 空壳</b>，不许升 PASS；元数据块（契约写进正文）先剥离，骗不过检查。</li>
+</ul>
+<h4>ORDER：逻辑顺序核对</h4>
+<p>只读 <code>order_anchors</code>（不回退 anchors，那是事实锚不是顺序锚）。返回每个锚词在正文的首次字符位置，报「逆序对」（后面的锚先出现）与缺失。判定交人，永久 WARN 不 BLOCK。</p>
+<h4>DIFF：契约变更审计</h4>
+<p>结构化字段 diff（不做整块文本对比）；section_kind / required_elements 变更高警示，无 changelog reason 判 INVALID。</p>
+<pre><code>python3 tools/lf/intent_ga.py CHECK contracts/part4_s12.contract.json 讲义.html --section-id s12 [--json]
+python3 tools/lf/intent_ga.py ORDER contracts/part4_s12.contract.json 讲义.html --section-id s12
+python3 tools/lf/intent_ga.py DIFF old.json new.json
+python3 tools/lf/intent_ga.py --selfcheck</code></pre>
+</div>
+
+<div class="comp" id="s12">
+<h3>12 logic_order.py — 逻辑顺序工具（325 行，2026-11-25 新增）</h3>
+<p class="kv">位置 <code>tools/lf/logic_order.py</code> · 数据 <code>framework/inputs/&lt;part&gt;/</code>（manifest.json + concept_map.json + marker_out/）</p>
+<h4>机制主张</h4>
+<div class="box">材料自带逻辑。工具从素材抽出概念顺序 → 评价候选哪个好 → 提案给作者 → 作者确认后写进契约 → 正文按契约组织 → ORDER 回读核对。<b>机器只抽取与打分，裁决交人。</b></div>
+<h4>三段命令</h4>
+<table>
+<tr><th>命令</th><th>方法</th></tr>
+<tr><td><code>EXTRACT &lt;inputs目录&gt;</code></td><td>抽素材 Markdown 标题行映射概念（一个标题可含多概念，按各自最早匹配位置排序，防泛词抢专词）；再抽 INTRODUCTION 段概念首提序；<b>加权合并</b>：章节骨架（作者明示逻辑）权重 2.0，引言序权重 1.0，按加权平均位置排序</td></tr>
+<tr><td><code>PROPOSE ... --section 1.2 [--current a,b,c]</code></td><td>生成候选（每份材料顺序补全 + 当前讲义顺序 + 先修拓扑序 Kahn），按三层打分排序去重输出</td></tr>
+<tr><td><code>CONFIRM &lt;contract&gt; --order a,b,c --reason ...</code></td><td>把作者选定顺序写进契约 order_anchors，version+1，changelog 记录理由与评分依据</td></tr>
+</table>
+<h4>打分判据（总分 = L1×0.4 + L2×0.4 + 覆盖×0.2）</h4>
+<table>
+<tr><th>层</th><th>判据</th><th>含义</th></tr>
+<tr><td>L1 先修</td><td>概念表 prereq 依赖满足率</td><td>依赖概念必须排在被依赖者之前</td></tr>
+<tr><td>L2 材料共识</td><td>候选顺序对各素材概念顺序的一致率（共有序列对的 Kendall 式一致率）</td><td>与权威材料叙述逻辑的吻合度</td></tr>
+<tr><td>覆盖</td><td>候选覆盖概念全集的比例</td><td>别漏概念</td></tr>
+</table>
+<h4>素材与概念表（可调部件）</h4>
+<ul>
+<li>素材真源：<code>inputs/&lt;part&gt;/manifest.json</code> + <code>marker_out/</code>（marker-pdf 2.2.0 抽取的 Markdown，章节骨架可信）。<b>禁用 pdftotext</b>：双栏混排会毁掉章节抽取（实测 FatTree/Jupiter 都翻车）。</li>
+<li>概念映射表 <code>concept_map.json</code>：<code>{"概念名": {"pats": [英文章节/引言正则], "prereq": [先修概念]}}</code>；下划线开头键是注释会被跳过。泛词要收紧（<code>existing</code> 会误命中 pre-existing，<code>clos</code> 裸词会抢 Fat-Tree 标题）。</li>
+<li>锚词必须与正文实际写法一致（正文写 Spine-Leaf 就别写 Leaf-Spine），否则 ORDER 报 missing。</li>
+</ul>
+<pre><code>python3 tools/lf/logic_order.py EXTRACT CloudComputing/framework/inputs/part4
+python3 tools/lf/logic_order.py PROPOSE CloudComputing/framework/inputs/part4 \
+    --section 1.2 --current "传统三层架构,STP,CLOS,Fat-Tree,Leaf-Spine,Jupiter"
+python3 tools/lf/logic_order.py CONFIRM CloudComputing/framework/contracts/part4_s12.contract.json \
+    --order "传统三层架构,STP,CLOS,Fat-Tree,Spine-Leaf,Jupiter" --reason "PROPOSE 评分 1.0，作者确认"</code></pre>
+<h4>part4 1.2 实测闭环</h4>
+<p>EXTRACT：FatTree 论文 = 传统三层→CLOS→Fat-Tree；Jupiter 论文 = CLOS→Jupiter。PROPOSE：当前讲义顺序得 1.0 分（L1 先修 5/5、L2 共识 1.0、覆盖 1.0）排第一。CONFIRM 写入 part4_s12 契约（version 3）。ORDER 回读 v3 正文：OK，无逆序无缺失。此后任何改动打乱顺序，pipeline REVIEW 自动报 SUSPECT。</p>
+</div>
+
+<div class="comp" id="s13">
+<h3>13 memory.py — M2 跨会话记忆（311 行）</h3>
+<p class="kv">位置 <code>tools/lf/memory.py</code> · 数据 <code>framework/memory/</code>（profile.json 长期层 + decisions.jsonl 动态层）· 参考 LectūraAgents 三层记忆，对象换成讲义作者</p>
+<h4>三层与边界</h4>
+<table>
+<tr><th>层</th><th>存储</th><th>内容</th></tr>
+<tr><td>短期层</td><td>不落盘</td><td>recall 返回的读回视图（全局体例+本讲画像+最近决策）</td></tr>
+<tr><td>长期层</td><td>profile.json</td><td>显式声明的使用者画像（dims/audience/difficulty，来自 K3 快照）与项目交付体例（单文件 HTML/窄卡片/先说人话）</td></tr>
+<tr><td>动态层</td><td>decisions.jsonl</td><td>append-only 存已闭环审稿结论与拍板；按内容 digest 去重，防流水线重复写入</td></tr>
+</table>
+<p><b>隐私边界</b>：只记「显式声明」和「已 resolved 的结论」，不从未声明行为推断个人信息；机器只读回和去重，不把记忆当质量判定。未声明偏好时保留默认，<b>不写入臆测画像</b>。</p>
+<h4>命令</h4>
+<pre><code>python3 tools/lf/memory.py PROFILE --lecture &lt;讲ID&gt; [--import-prefs] [--json]
+python3 tools/lf/memory.py DECIDE --lecture &lt;讲ID&gt; --key 体例 --value 窄卡片 [--why ...]
+python3 tools/lf/memory.py RECALL [--lecture &lt;讲ID&gt;] [--limit 20]
+python3 tools/lf/memory.py LINK_REVIEW review.json [--lecture &lt;讲ID&gt;]   # 已闭环审稿结论回写，digest 去重</code></pre>
+<p>pipeline 集成：ASSET 段读回显式画像；run 开头 <code>sync_from_prefs()</code> 把 K3 偏好快照进长期层（变了才落盘）；REVIEW 段审稿闭环自动 <code>link_review()</code> 回写。</p>
+</div>
+
+<div class="comp" id="s14">
+<h3>14 doc_slice.py + spec.py — 切片与真源</h3>
+<h4>14.1 doc_slice.py（140 行）：带行号切片，省 token 的文件交接</h4>
+<p>目的：子代理/审稿人只读自己那一章的切片，回传结论 JSON；主代理按行号抽验。省的是「整本 HTML 反复搬进对话」的 token，<b>不省「真读原文」这一步</b>。</p>
+<ul>
+<li>按 <code>&lt;h2 class="chapter"&gt;</code> 切章；无 chapter 类则整份一块。</li>
+<li>去 base64（换 [图]）、去 style/script（保留换行数不串行号）、去标签、HTML 转义还原；每行 <code>L123: 正文</code>，不裁行不改行号。</li>
+<li>输出 manifest.json（源 md5/章范围/切片清单）+ chapters/*.txt + full.txt（兜底，不默认交给子代理）。</li>
+</ul>
+<pre><code>python3 tools/lf/doc_slice.py --html 讲义.html --outdir /tmp/slices --prefix part4</code></pre>
+<h4>14.2 spec.py（70 行）：单一真源读取</h4>
+<p><code>load_spec()</code> 读 <code>framework/spec/spec_v0.1.0.json</code> 并做结构校验（name 非空、阶段 id 不重复、每段七字段齐备：id/name/abilities/inputs/outputs/gate/desc）；<code>pipeline_order()</code> 返回段序；直跑即自检（段序必须等于 ASSET→ANCHOR→WRITE→GATE→REVIEW→DELIVER）。</p>
+</div>
+
+<h2 id="s15">15 扩展操作：如何添加知识点</h2>
+<p>本章回答最常见的问题：<b>想给讲义加一个新知识点（新的一节、新的概念、新的素材），该怎么操作</b>。Noteleaf 不是一键生成器，扩展的本质是「把素材沿流水线加进来，让机器逐道核对」。下面先给「添加一节」的完整六步，再给三类轻量扩展。</p>
+
+<h3>15.1 完整流程：添加一节（一个知识点）</h3>
+<table>
+<tr><th>步</th><th>做什么</th><th>命令 / 文件</th><th>产出</th></tr>
+<tr><td>1 备素材</td><td>把知识点的原始材料（论文 PDF、官方文档）放进 <code>CloudComputing/framework/inputs/&lt;part&gt;/</code>，用 marker 抽成 Markdown。<b>不要用 pdftotext</b>（双栏混排不可用）。</td><td><code>marker_single &lt;论文.pdf&gt; --output_dir CloudComputing/framework/inputs/&lt;part&gt;/marker_out</code></td><td>可读的 .md 素材</td></tr>
+<tr><td>2 登记素材</td><td>在 <code>inputs/&lt;part&gt;/manifest.json</code> 的 materials 数组追加一条：id / title / venue / md 相对路径。</td><td>编辑 manifest.json</td><td>素材进入真源清单</td></tr>
+<tr><td>3 锁词汇</td><td>若引入新术语，编辑 <code>CloudComputing/framework/vocab/&lt;name&gt;_known_terms.json</code>：terms 追加、<b>version+1</b>、changelog 记理由。契约将按 <code>&lt;name&gt;@&lt;version&gt;</code> 引用。</td><td>编辑 vocab json</td><td>封闭词表新版本</td></tr>
+<tr><td>4 定顺序</td><td>在 <code>inputs/&lt;part&gt;/concept_map.json</code> 给新概念加 <code>{"pats":[英文章节标题正则],"prereq":[先修概念]}</code>；然后抽取 + 提案。</td><td><code>python3 tools/lf/logic_order.py EXTRACT inputs/&lt;part&gt;</code><br><code>python3 tools/lf/logic_order.py PROPOSE inputs/&lt;part&gt; --section &lt;节号&gt; --current "现有顺序"</code></td><td>候选顺序 + 打分（机器只提案）</td></tr>
+<tr><td>5 写契约</td><td>复制模板填契约：contract_id / section_id（与 HTML 节 id 一致）/ section_kind / objectives（读者能+可测动词）/ known_terms_ref / order_contract / required_elements；再把选定顺序写入。</td><td><code>cp contracts/_TEMPLATE.contract.json contracts/&lt;讲&gt;_s&lt;节号&gt;.contract.json</code><br><code>python3 tools/lf/logic_order.py CONFIRM &lt;契约.json&gt; --order "A,B,C" --reason "选定理由"</code></td><td>意图契约（含 order_anchors）</td></tr>
+<tr><td>6 组稿过门禁</td><td>编辑讲义 HTML 加节（节 id 与契约 section_id 一致），按契约顺序组织材料，然后逐道核对。</td><td>见下方门禁命令组</td><td>全绿的新一节</td></tr>
+</table>
+<p>第 6 步的门禁命令组（全部在包根目录跑）：</p>
+<pre><code># 四要素是否都写到（无 MISS）
+python3 tools/lf/intent_ga.py CHECK contracts/&lt;讲&gt;_s&lt;节号&gt;.contract.json &lt;讲义.html&gt; --section-id s&lt;节号&gt;
+
+# 讲述顺序是否与契约一致（无逆序、无缺失）
+python3 tools/lf/intent_ga.py ORDER contracts/&lt;讲&gt;_s&lt;节号&gt;.contract.json &lt;讲义.html&gt; --section-id s&lt;节号&gt;
+
+# 机械痕迹体检（FAIL 必须清零）
+python3 tools/lf/lecture_lint.py &lt;讲义.html&gt;
+
+# 结构与忠实度体检（FAIL 清零）
+python3 tools/lf/rubric_check.py &lt;讲义.html&gt;
+
+# 全链验证（含契约 CHECK/ORDER）
+python3 tools/lf/pipeline_run.py --lecture &lt;讲ID&gt; --html &lt;讲义.html&gt; --json</code></pre>
+
+<h3>15.2 轻量扩展一：加一条检查规则（纠错转检查）</h3>
+<p>同一个错只人工纠正一次，然后固化成规则，这是 Noteleaf 的核心方法论（参考 Lauren Tan / Claude Code）。</p>
+<ul>
+<li><b>机械痕迹</b>（破折号、画外音、空锚文本、图引用这类可确定性定位的）→ 在 <code>tools/lf/lecture_lint.py</code> 加一项，编号顺延 L9、L10。</li>
+<li><b>结构 / 忠实度</b>（标题、图、术语、示例这类原子项）→ 在 <code>tools/lf/rubric_check.py</code> 加一项，编号顺延 R8、R9。</li>
+<li>改完先跑 <code>--selfcheck</code>，确认没破坏既有检查再上真稿。</li>
+<li>原则不变：机器只定位、裁决归人；教学结构检查永久 WARN 不 BLOCK，防「合规稿」KPI 游戏。</li>
+</ul>
+
+<h3>15.3 轻量扩展二：加一个素材来源</h3>
+<ul>
+<li><code>tools/lf/k1_acquire.py</code> 已内置四类来源：PAPERS（论文）/ VENDOR（厂商数字卡）/ TEXTBOOK（教材）/ ZHIHU（工程实践线索）。新来源照其中一类的工单写入模式加。</li>
+<li>论文标准知识点锚加在 <code>framework/k1/paper_seeds.json</code> 种子表。</li>
+<li>若要接 RAGFlow 发现层，需 <code>framework/k1/ragflow.json</code>（endpoint / token / kb）。<b>本独立包不含此文件</b>（含密钥），按 <code>k1_acquire.py</code> 内注释自行配置；缺失时工具自动跳过发现层并提示，不报错。</li>
+</ul>
+
+<h3>15.4 轻量扩展三：改流水线阶段或门禁</h3>
+<ul>
+<li>spec 是单一真源：<code>CloudComputing/framework/spec/spec_v0.1.0.json</code>。增删阶段、改能力归属、改门禁名，都只改这个文件。</li>
+<li><code>pipeline_run.py</code> 不硬编码段序，从 spec 读取；spec 里出现无执行器的段会被 FAIL 直接暴露，防漂移。</li>
+<li>改完先跑 <code>python3 tools/lf/spec.py</code> 自检（段序必须等于 ASSET→ANCHOR→WRITE→GATE→REVIEW→DELIVER）。</li>
+</ul>
+
+<div class="warnbox"><b>扩展的三条纪律</b><br>
+1. <b>加料不删史</b>：台账、工单、决策全部 append-only，同名冲突报错不覆盖，可回溯。<br>
+2. <b>改规则带版本</b>：词表 / 契约变更必须 version+1 并在 changelog 写理由。<br>
+3. <b>机器不裁决</b>：所有扩展加的都是「可定位的检查」，不是「自动改写」；好坏判断永远归人。</div>
+
+<h2 id="s16">16 典型工作流</h2>
+<h3>16.1 修订一讲（从 iCloud 原件重做）</h3>
+<pre><code># 1) 构建脚本从 iCloud 原件生成新稿（脚本放 /tmp，不污染项目）
+python3 /tmp/build_part4_v3_20261125.py
+
+# 2) 机械体检（FAIL 必须清零，WARN 逐条回原文核验）
+python3 tools/lf/lecture_lint.py CloudComputing/framework/&lt;新稿&gt;.html
+
+# 3) 全链验证（含契约 CHECK/ORDER）
+python3 tools/lf/pipeline_run.py --lecture &lt;讲ID&gt; --html CloudComputing/framework/&lt;新稿&gt;.html --json
+
+# 4) 交付 iCloud（只用 ditto，TCC 下 ls/python 会被拒）
+ditto CloudComputing/framework/&lt;新稿&gt;.html \
+  "/Users/macnini/Library/Mobile Documents/com~apple~CloudDocs/云计算讲义/&lt;新稿&gt;.html"
+md5 -q 两端文件   # 必须一致</code></pre>
+<h3>16.2 写新讲（从零）</h3>
+<pre><code># 1) 素材准备：种子表 + RAGFlow 发现层 + 缺口清单
+python3 tools/lf/k1_acquire.py PREP 03_存储与数据 存储 对象存储 --ragflow
+# 2) 工单打进台账
+python3 tools/lf/asset_score.py FROM_TICKETS
+# 3) 声明偏好（O2 硬前置）
+python3 tools/lf/prefs.py --declare 03_存储与数据 '["机制","架构"]'
+# 4) 前置门禁确认可写
+python3 tools/lf/preflight.py --lecture 03_存储与数据
+# 5) 写作（按 cloud-lecture-writing skill §0-§3）
+# 6) 全链验证 + 交付（同 16.1）</code></pre>
+<h3>16.3 给一节上逻辑契约</h3>
+<pre><code># 1) 素材固化：PDF 用 marker_single 抽 Markdown（禁 pdftotext），写 manifest.json
+marker_single &lt;论文.pdf&gt; --output_dir CloudComputing/framework/inputs/&lt;part&gt;/marker_out
+# 2) 写概念表 concept_map.json（pats 收紧防泛词，prereq 声明先修）
+# 3) EXTRACT 看抽取质量 → PROPOSE 看候选打分 → 作者选定 → CONFIRM 写契约
+# 4) ORDER 回读正文验证 OK；此后 pipeline REVIEW 自动盯顺序</code></pre>
+<h3>16.4 独立审稿（写者不自审）</h3>
+<pre><code># 1) 切片交接，审稿人只读自己那章
+python3 tools/lf/doc_slice.py --html 讲义.html --outdir /tmp/slices --prefix part4
+# 2) 导待回源清单
+python3 tools/lf/rubric_check.py 讲义.html --export-json /tmp/待回源.json
+# 3) 审稿人全新上下文通读五动作，逐条对照素材回源，写 review.json（issues 含 issue/evidence/resolved/note）
+# 4) 闭环结论回写 M2
+python3 tools/lf/memory.py LINK_REVIEW review.json --lecture &lt;讲ID&gt;</code></pre>
+
+<h2 id="s17">17 排错表</h2>
+<table>
+<tr><th>症状</th><th>原因与查法</th></tr>
+<tr><td>ORDER 报 missing</td><td>锚词与正文实际写法不一致（如 Leaf-Spine vs Spine-Leaf）；grep 正文确认写法后改契约</td></tr>
+<tr><td>EXTRACT 概念顺序乱</td><td>概念表泛词误命中（existing/clos 裸词），收紧 pats；确认素材是 marker 抽的而非 pdftotext（双栏混排）</td></tr>
+<tr><td>pipeline WRITE 段 prefs FAIL</td><td>prefs/&lt;讲ID&gt;_prefs.json 缺失或维度非法；按 fix 命令声明</td></tr>
+<tr><td>构建脚本 old_string 不匹配</td><td>前序替换（如破折号→逗号）改了文本；按替换后文本精确匹配，或调整步骤顺序</td></tr>
+<tr><td>lint 报跨标签「——」但原文没有</td><td>剥标签时若用空串替换会把相邻单字「—」拼成「——」；确认用空格替换（已修）</td></tr>
+<tr><td>图号重排出现「图 6.99」</td><td>链式 re.subn 编号互相命中；必须单次正则 + counter 函数</td></tr>
+<tr><td>RAGFlow 发现层全是无关文档</td><td>全局 Top-N 被高频类目淹没；确认走了分组配额 + 标题弱重叠门禁（已内置）</td></tr>
+<tr><td>iCloud 写入被拒</td><td>TCC 限制：只用 ditto，不用 ls/python 直写；mdfind/md5 可验证</td></tr>
+<tr><td>pipeline CONTEXT FAIL</td><td>运行中文件被别处改动（doc_stable 检出）；重跑或查并行 agent</td></tr>
+<tr><td>selfcheck 失败</td><td>改完工具先跑 <code>--selfcheck</code> 再上真稿；selfcheck 用临时目录不污染数据</td></tr>
+</table>
+
+<h2 id="s18">附：设计原则红线（速记）</h2>
+<ul>
+<li>机器只定位，裁决归人；教学结构检查永久 WARN 不 BLOCK。</li>
+<li>纠错转检查：同一个错只纠正一次，然后写成 lint/脚本。</li>
+<li>确定性机制 &gt; 提示词：能脚本判定的不靠文案提醒。</li>
+<li>验证优先：每个工具带 selfcheck 与可核对数字（md5 / FAIL 计数 / 覆盖率）。</li>
+<li>讲义体例与教材相反：讲义允许厂商名、保留出处外链与路标句；教材全禁。两套稿件不互套。</li>
+<li>iCloud 写入只用 ditto；生成脚本放 /tmp；交付物单文件自包含 HTML；禁 md 交付。</li>
+</ul>
+
+</body>
+</html>
